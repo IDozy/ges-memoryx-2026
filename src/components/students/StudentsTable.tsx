@@ -47,11 +47,9 @@ export default function StudentsTable({
               value={globalFilter ?? ""}
               onChange={(e) => setGlobalFilter(e.target.value)}
               placeholder="Buscar por nombre, apellidos, teléfono, grado, escuela..."
-              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 pr-10 text-sm outline-none focus:ring-2 focus:ring-black/10"
+              className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2  text-sm outline-none focus:ring-2 focus:ring-black/10"
             />
-            <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 opacity-60">
-              🔎
-            </div>
+            
           </div>
 
           <div className="text-sm opacity-70">

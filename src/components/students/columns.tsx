@@ -31,14 +31,24 @@ export function getStudentColumns(opts: {
       accessorKey: "estado",
       header: "Estado",
       cell: ({ getValue }) => {
-        const v = getValue<string>();
+        const v = String(getValue() ?? "").toLowerCase();
+
+        const isActivo = v === "activo";
+
         return (
-          <span className="inline-flex items-center rounded-full bg-[var(--color-muted)] px-2.5 py-1 text-xs">
-            {v === "activo" ? "Activo" : "Retirado"}
+          <span
+            className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium
+        ${isActivo
+                ? "bg-green-100 text-green-700 border border-green-300"
+                : "bg-red-100 text-red-700 border border-red-300"
+              }`}
+          >
+            {isActivo ? "Activo" : "Retirado"}
           </span>
         );
       },
     },
+
     {
       id: "actions",
       header: "",
