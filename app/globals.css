@@ -20,6 +20,8 @@
   --color-text: #fafafa;
 
   --color-surface: rgba(255, 255, 255, 0.06);
+  
+  --color-surface-solid: #18181b;
   --color-muted: rgba(255, 255, 255, 0.10);
 
   --color-border: rgba(255, 255, 255, 0.12);

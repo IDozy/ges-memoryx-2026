@@ -78,6 +78,36 @@ const demoData: Estudiante[] = [
       5: buildMes(80, [], true),
     },
   },
+  {
+    id: uid(),
+    nombreCompleto: "Briana Eugenio Ramos",
+    tutor: "Alex",
+    pagosPorMes: {
+      3: buildMes(80, [{ date: "2025-04-08", amount: 50 }]), // pendiente
+      4: buildMes(80, [], true), // no registrado -> ahora se puede registrar
+      5: buildMes(80, [], true),
+    },
+  },
+  {
+    id: uid(),
+    nombreCompleto: "Briana Eugenio Ramos",
+    tutor: "Alex",
+    pagosPorMes: {
+      3: buildMes(80, [{ date: "2025-04-08", amount: 50 }]), // pendiente
+      4: buildMes(80, [], true), // no registrado -> ahora se puede registrar
+      5: buildMes(80, [], true),
+    },
+  },
+  {
+    id: uid(),
+    nombreCompleto: "Briana Eugenio Ramos",
+    tutor: "Alex",
+    pagosPorMes: {
+      3: buildMes(80, [{ date: "2025-04-08", amount: 50 }]), // pendiente
+      4: buildMes(80, [], true), // no registrado -> ahora se puede registrar
+      5: buildMes(80, [], true),
+    },
+  },
 ];
 
 type AbonarTarget = {
@@ -274,9 +304,6 @@ export default function PagosPage() {
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Lista de Pagos</h1>
-        <p className="mt-1 text-sm opacity-70">
-          Pagos por mes (horizontal) y estudiantes (vertical).
-        </p>
       </div>
 
       {/* Controls */}
@@ -308,58 +335,60 @@ export default function PagosPage() {
 
       {/* Matrix */}
       <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm">
-        <div className="max-h-[520px] overflow-auto">
-          <table className="min-w-[1200px] w-full border-separate border-spacing-0 text-sm">
-            <thead className="sticky top-0 z-20">
-              <tr>
-                <th className="sticky left-0 z-30 bg-[var(--color-muted)] px-4 py-3 text-left text-xs font-semibold border-b border-[var(--color-border)]">
-                  Estudiante
-                </th>
-                {MESES.map((m) => (
-                  <th
-                    key={m}
-                    className="bg-[var(--color-muted)] px-4 py-3 text-center text-xs font-semibold border-b border-[var(--color-border)]"
-                  >
-                    {m}
+        <div className="h-full overflow-auto">
+          <div className="relative h-[calc(100dvh-259px)] overflow-x-auto overflow-y-auto">
+            <table className="min-w-[1200px] w-full border-separate border-spacing-0 text-sm">
+              <thead className="sticky top-0 z-20 ">
+                <tr >
+                  <th className="sticky left-0 z-30 bg-[var(--color-muted)] px-4 py-3 text-left text-xs font-semibold border-b border-r border-[var(--color-border)]">
+                    Estudiante
                   </th>
-                ))}
-              </tr>
-            </thead>
-
-            <tbody>
-              {students.map((s) => (
-                <tr key={s.id}>
-                  <td className="sticky left-0 z-10 bg-[var(--color-surface)] px-4 py-4 border-b border-[var(--color-border)] font-medium">
-                    {s.nombreCompleto}
-                  </td>
-
-                  {MESES.map((_, idx) => {
-                    const mes = s.pagosPorMes[idx] ?? buildMes(80, [], true);
-                    const est = estadoMes(mes);
-                    const sum = sumPagos(mes);
-                    const pagosCount = mes.pagos.length;
-                    const lastPago = mes.pagos[mes.pagos.length - 1];
-
-                    return (
-                      <td key={idx} className="px-3 py-3 border-b border-[var(--color-border)] align-middle">
-                        <PagoCell
-                          estado={est}
-                          total={mes.total}
-                          sum={sum}
-                          pagosCount={pagosCount}
-                          lastPago={lastPago}
-                          pagos={mes.pagos}
-                          onAbonar={() => openAbonarModal(s, idx)}
-                          onRegistrar={() => openRegistrarModal(s, idx)}
-                          onBoleta={() => generarBoleta(s, idx)}
-                        />
-                      </td>
-                    );
-                  })}
+                  {MESES.map((m) => (
+                    <th
+                      key={m}
+                      className="bg-[var(--color-muted)] px-4 py-3 text-center text-xs font-semibold border-b border-r border-[var(--color-border)]"
+                    >
+                      {m}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+
+              <tbody>
+                {students.map((s) => (
+                  <tr key={s.id}>
+                    <td className="sticky left-0 z-10  bg-[var(--color-surface)]   px-4 py-4 border-b border-r border-[var(--color-border)] font-medium">
+                      {s.nombreCompleto}
+                    </td>
+
+                    {MESES.map((_, idx) => {
+                      const mes = s.pagosPorMes[idx] ?? buildMes(80, [], true);
+                      const est = estadoMes(mes);
+                      const sum = sumPagos(mes);
+                      const pagosCount = mes.pagos.length;
+                      const lastPago = mes.pagos[mes.pagos.length - 1];
+
+                      return (
+                        <td key={idx} className="px-3 py-3 border-b border-r border-[var(--color-border)] align-middle">
+                          <PagoCell
+                            estado={est}
+                            total={mes.total}
+                            sum={sum}
+                            pagosCount={pagosCount}
+                            lastPago={lastPago}
+                            pagos={mes.pagos}
+                            onAbonar={() => openAbonarModal(s, idx)}
+                            onRegistrar={() => openRegistrarModal(s, idx)}
+                            onBoleta={() => generarBoleta(s, idx)}
+                          />
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -553,7 +582,7 @@ function RegistrarMesModal({
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       <button className="absolute inset-0 bg-black/40" onClick={onClose} aria-label="Cerrar" />
-      <div className="relative w-full max-w-lg rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-xl">
+      <div className="relative w-full max-w-lg rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-xl ">
         <div className="flex items-center justify-between border-b border-[var(--color-border)] p-4">
           <div>
             <div className="text-sm font-semibold">Registrar mes</div>

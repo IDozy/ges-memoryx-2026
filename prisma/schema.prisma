@@ -1,0 +1,253 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/**
+ * ------------------ ENUMS ------------------
+ */
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum TipoActividad {
+  NIVEL
+  TALLER
+}
+
+enum Gender {
+  M
+  F
+}
+
+enum StudentStatus {
+  ACTIVO
+  RETIRADO
+}
+
+enum PaymentStatus {
+  NO_PAGO
+  PENDIENTE
+  PAGADO
+  NO_REGISTRADO
+}
+
+enum PaymentType {
+  CASH
+  YAPE
+  PLIN
+  TRANSFER
+}
+
+/**
+ * ------------------ AUTH ------------------
+ */
+
+model User {
+  id             String    @id @default(uuid())
+  name           String?
+  email          String    @unique
+  emailVerified  DateTime?
+  hashedPassword String
+  role           Role      @default(USER)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/**
+ * ------------------ CORE ------------------
+ */
+
+model Student {
+  id String @id @default(uuid())
+
+  firstName      String
+  lastNameFather String
+  lastNameMother String
+
+  birthDate DateTime?
+  gender    Gender?
+
+  grade  String?
+  school String?
+
+  tutor        String?
+  phone        String?
+  address      String?
+  pickupPerson String?
+
+  status StudentStatus @default(ACTIVO)
+
+  actividades StudentActividad[]
+  payments    Payment[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  receipts  Receipt[]
+
+  @@index([lastNameFather, lastNameMother, firstName])
+}
+
+model Profesor {
+  id     String @id @default(uuid())
+  nombre String
+
+  actividades Actividad[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Ciclo {
+  id     String @id @default(uuid())
+  nombre String @unique // "Regular 2026", "Verano 2026"
+
+  actividades Actividad[]
+  payments    Payment[]
+  receipts    Receipt[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Actividad {
+  id     String        @id @default(uuid())
+  nombre String
+  tipo   TipoActividad @default(NIVEL)
+
+  estudiantes StudentActividad[]
+
+  profesorId String?
+  profesor   Profesor? @relation(fields: [profesorId], references: [id], onDelete: SetNull)
+
+  cicloId String?
+  ciclo   Ciclo?  @relation(fields: [cicloId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tipo])
+  @@index([cicloId])
+  @@index([profesorId])
+}
+
+model StudentActividad {
+  id String @id @default(uuid())
+
+  studentId   String
+  actividadId String
+
+  student   Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  actividad Actividad @relation(fields: [actividadId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentId, actividadId])
+  @@index([studentId])
+  @@index([actividadId])
+}
+
+/**
+ * ------------------ PAYMENTS ------------------
+ */
+/**
+ * Regla para tu tabla:
+ * - 1 Payment por estudiante + ciclo + mes + año (una celda)
+ * - PaymentDetail = abonos (parciales)
+ * - Receipt = boleta histórica emitida cuando totalPaid >= total
+ */
+
+model Payment {
+  id String @id @default(uuid())
+
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  cycleId String
+  cycle   Ciclo  @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+
+  month Int // Recomendado: 1..12 (puedes usar 0..11 si tu front así lo maneja)
+  year  Int
+
+  total     Float
+  totalPaid Float         @default(0)
+  status    PaymentStatus @default(NO_PAGO)
+
+  paid    PaymentDetail[]
+  receipt Receipt?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentId, cycleId, month, year])
+  @@index([cycleId, year, month])
+  @@index([studentId, year, month])
+}
+
+model PaymentDetail {
+  id String @id @default(uuid())
+
+  paymentId String
+  payment   Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  date        DateTime    @default(now())
+  amount      Float
+  paymentType PaymentType @default(CASH)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([paymentId])
+}
+
+/**
+ * ------------------ RECEIPTS (BOLETAS) ------------------
+ */
+/**
+ * Aquí tienes correlativo sin Counter:
+ * - correlativo Int autoincrement()
+ * - receiptNo string opcional (formato final), o lo formas en backend al generar PDF
+ */
+
+model Receipt {
+  id String @id @default(uuid())
+
+  // correlativo global (seguro, sin duplicados)
+  correlativo Int @unique @default(autoincrement())
+
+  // si quieres guardarlo ya formateado: "REG-2026-000123"
+  receiptNo String? @unique
+
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  cycleId String
+  cycle   Ciclo  @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+
+  paymentId String  @unique
+  payment   Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  month Int
+  year  Int
+
+  servicio  String @default("Mensualidad")
+  total     Float
+  totalPaid Float
+
+  // snapshot de abonos (opcional). Si prefieres normalizar, puedes omitirlo y leer PaymentDetail.
+  pagosJson Json?
+
+  issuedAt DateTime @default(now())
+
+  @@unique([studentId, cycleId, month, year])
+  @@index([cycleId, year, month])
+  @@index([studentId, year, month])
+}

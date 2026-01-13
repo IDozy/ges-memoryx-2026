@@ -100,15 +100,6 @@ export default function Sidebar({ onNavigate, collapsed = false, onToggle }: Pro
         })}
       </nav>
 
-      {/* Tip */}
-      {!collapsed && (
-        <div className="mt-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-muted)] p-4">
-          <div className="text-xs opacity-70">Tip</div>
-          <div className="mt-1 text-sm">
-            Aquí podrás administrar estudiantes, cursos y pagos.
-          </div>
-        </div>
-      )}
 
     </aside>
   );
