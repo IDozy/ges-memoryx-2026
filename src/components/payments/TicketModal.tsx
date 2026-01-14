@@ -21,9 +21,23 @@ export function BoletaModal({
 }) {
   const totalPagado = data.pagos.reduce((a, p) => a + p.amount, 0);
 
+  async function toDataUrl(url: string) {
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error("No se pudo cargar el logo");
+  const blob = await res.blob();
+  return await new Promise<string>((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result));
+    r.onerror = reject;
+    r.readAsDataURL(blob);
+  });
+}
+
+
   async function download() {
     try {
-      const logoUrl = `${window.location.origin}/logo-memoryx.png`;
+      const logoUrl = await toDataUrl(`${window.location.origin}/logo-memoryx.png`);
+
 
       const doc = (
         <ReciboPagoPdf
@@ -47,7 +61,11 @@ export function BoletaModal({
       );
 
       toast.message("Generando PDF...");
-      const blob = await pdf(doc).toBlob();
+
+       const pdfInstance = pdf();
+      pdfInstance.updateContainer(doc);
+      const blob = await pdfInstance.toBlob();
+      
       const url = URL.createObjectURL(blob);
 
       const a = document.createElement("a");

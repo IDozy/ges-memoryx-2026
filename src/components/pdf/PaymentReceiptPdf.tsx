@@ -1,5 +1,5 @@
 // src/components/pdf/ReciboPagoPdf.tsx
-import React from "react";
+
 import {
   Document,
   Page,
@@ -7,7 +7,10 @@ import {
   View,
   StyleSheet,
   Image,
+  Font
 } from "@react-pdf/renderer";
+
+Font.registerHyphenationCallback(word => [word]);
 
 type PagoItem = { date: string; amount: number };
 
@@ -43,7 +46,7 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica",
   },
   logoWrap: { alignItems: "center", marginBottom: 10 },
-  logo: { width: 140, height: 42, objectFit: "contain" },
+  logo: { width: 120, height: "auto", marginBottom: 10 },
 
   line: {
     height: 1,
@@ -66,14 +69,14 @@ const styles = StyleSheet.create({
   },
   boxCol: { flex: 1 },
 
-  table: { marginTop: 10, borderWidth: 0 },
+  table: { marginTop: 10 },
   thRow: {
     flexDirection: "row",
     backgroundColor: PURPLE,
     paddingVertical: 6,
     paddingHorizontal: 8,
   },
-  th: { color: "#fff", fontSize: 10, fontWeight: 700 },
+  th: { color: "#fff", fontSize: 10, fontWeight: "bold"},
   tdRow: {
     flexDirection: "row",
     backgroundColor: "#f3f3f3",
@@ -87,13 +90,13 @@ const styles = StyleSheet.create({
   wPrecio: { width: "20%", textAlign: "right" },
   wImporte: { width: "20%", textAlign: "right" },
 
-  sectionTitle: { marginTop: 16, fontSize: 11, fontWeight: 700 },
+  sectionTitle: { marginTop: 16, fontSize: 11, fontWeight: "bold"},
 
   miniTableWrap: { alignItems: "center", marginTop: 8 },
-  miniTable: { width: 220, borderWidth: 0 },
+  miniTable: { width: 220 },
   miniThRow: { flexDirection: "row", backgroundColor: PURPLE_2, padding: 6 },
   miniTdRow: { flexDirection: "row", backgroundColor: "#f5f5f5", padding: 6 },
-  miniTh: { color: "#fff", fontSize: 10, fontWeight: 700 },
+  miniTh: { color: "#fff", fontSize: 10, fontWeight: "bold"},
   miniTd: { fontSize: 10 },
   miniWFecha: { width: "60%" },
   miniWMonto: { width: "40%", textAlign: "right" },

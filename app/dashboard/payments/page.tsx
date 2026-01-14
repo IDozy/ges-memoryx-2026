@@ -5,26 +5,28 @@ import { toast } from "sonner";
 
 import type { AbonarTarget, Estudiante, RegistrarTarget, PagoItem } from "@/src/components/payments/types";
 import { MESES, DEFAULT_TOTAL_MES } from "@/src/components/payments/constants";
-import { buildMes, estadoMes, money, sumPagos } from "@/src/components/payments/utils";
+import { buildMes, estadoMes, sumPagos } from "@/src/components/payments/utils";
 
 import { PagoCell } from "@/src/components/payments/paymentCell";
 import { RegistrarMesModal } from "@/src/components/payments/RegisterModalMonth";
 import { AbonarModal } from "@/src/components/payments/PayModal";
 import { BoletaModal } from "@/src/components/payments/TicketModal";
 
-// ✅ TEMPORAL: hasta que tengas GET /api/cycles
-const CYCLE_MAP: Record<string, { id: string; year: number }> = {
-  "regular 2025": { id: "REEMPLAZA_CON_TU_ID_REGULAR_2025", year: 2025 },
-  "verano 2025": { id: "REEMPLAZA_CON_TU_ID_VERANO_2025", year: 2025 },
-  "regular 2026": { id: "REEMPLAZA_CON_TU_ID_REGULAR_2026", year: 2026 },
-};
+type CycleItem = { id: string; nombre: string; createdAt: string };
+
+function parseYearFromCycleName(nombre: string) {
+  const m = nombre.match(/\b(20\d{2})\b/);
+  return m ? Number(m[1]) : new Date().getFullYear();
+}
 
 export default function PagosPage() {
-  const [cycle, setCycle] = useState("regular 2025");
-  const [selectedYear, setSelectedYear] = useState<number>(CYCLE_MAP["regular 2025"].year);
+  // ✅ ciclos reales
+  const [cycles, setCycles] = useState<CycleItem[]>([]);
+  const [cycleId, setCycleId] = useState<string>(""); // id real en BD
+  const selectedCycle = useMemo(() => cycles.find((c) => c.id === cycleId) ?? null, [cycles, cycleId]);
 
-  const cycleId = CYCLE_MAP[cycle]?.id;
-  const year = selectedYear;
+  // ✅ año (lo derivamos del nombre del ciclo)
+  const year = useMemo(() => (selectedCycle ? parseYearFromCycleName(selectedCycle.nombre) : new Date().getFullYear()), [selectedCycle]);
 
   const [q, setQ] = useState("");
   const [data, setData] = useState<Estudiante[]>([]);
@@ -50,15 +52,36 @@ export default function PagosPage() {
     return data.filter((s) => s.nombreCompleto.toLowerCase().includes(qq));
   }, [q, data]);
 
-  // ✅ cargar desde API
-  async function loadMatrix() {
-    if (!cycleId) {
-      toast.error("cycleId no configurado (reemplaza IDs del CYCLE_MAP)");
-      return;
+  // ✅ 1) cargar ciclos reales
+  async function loadCycles() {
+    try {
+      const res = await fetch("/api/cycles", { cache: "no-store" });
+      if (!res.ok) throw new Error("No se pudo cargar ciclos");
+      const json = await res.json();
+      const items: CycleItem[] = json.items ?? [];
+      setCycles(items);
+
+      // ✅ setear default (primero)
+      if (!cycleId && items.length > 0) {
+        setCycleId(items[0].id);
+      }
+    } catch (e: any) {
+      toast.error("Error", { description: e.message });
     }
+  }
+
+  useEffect(() => {
+    loadCycles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ✅ 2) cargar matriz desde API
+  async function loadMatrix(searchText: string) {
+    if (!cycleId) return; // todavía no cargó ciclos
 
     const res = await fetch(
-      `/api/payments/matrix?cycleId=${encodeURIComponent(cycleId)}&year=${year}&q=${encodeURIComponent(q)}`
+      `/api/payments/matrix?cycleId=${encodeURIComponent(cycleId)}&year=${year}&q=${encodeURIComponent(searchText)}`,
+      { cache: "no-store" }
     );
 
     if (!res.ok) {
@@ -70,12 +93,20 @@ export default function PagosPage() {
     setData(json.items ?? []);
   }
 
-  // ✅ recarga cuando cambie ciclo/año/búsqueda
+  // ✅ recarga cuando cambie ciclo o año
   useEffect(() => {
-    // si quieres evitar pedir en cada tecla, luego lo hacemos con debounce
-    loadMatrix();
+    if (!cycleId) return;
+    loadMatrix(q);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cycleId, year, q]);
+  }, [cycleId, year]);
+
+  // ✅ debounce para búsqueda
+  useEffect(() => {
+    if (!cycleId) return;
+    const t = setTimeout(() => loadMatrix(q), 250);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q, cycleId, year]);
 
   function openRegistrarModal(student: Estudiante, mesIndex: number) {
     setRegistrarTarget({
@@ -114,7 +145,7 @@ export default function PagosPage() {
   async function registrarMes(total: number) {
     if (!registrarTarget) return;
     if (!cycleId) {
-      toast.error("cycleId no configurado");
+      toast.error("No hay ciclo seleccionado");
       return;
     }
 
@@ -126,7 +157,7 @@ export default function PagosPage() {
           studentId: registrarTarget.studentId,
           cycleId,
           year,
-          month: registrarTarget.mesIndex + 1, // 0..11 → 1..12
+          month: registrarTarget.mesIndex + 1,
           total,
         }),
       });
@@ -143,11 +174,9 @@ export default function PagosPage() {
       setOpenRegistrar(false);
       setRegistrarTarget(null);
 
-      await loadMatrix();
+      await loadMatrix(q);
     } catch (e: any) {
-      toast.error("No se pudo registrar el mes", {
-        description: e.message,
-      });
+      toast.error("No se pudo registrar el mes", { description: e.message });
     }
   }
 
@@ -155,7 +184,7 @@ export default function PagosPage() {
   async function registrarAbono(amount: number, date: string) {
     if (!abonarTarget) return;
     if (!cycleId) {
-      toast.error("cycleId no configurado");
+      toast.error("No hay ciclo seleccionado");
       return;
     }
 
@@ -169,8 +198,8 @@ export default function PagosPage() {
           year,
           month: abonarTarget.mesIndex + 1,
           amount,
-          date, // "YYYY-MM-DD"
-          paymentType: "CASH", // o manda esto desde el modal
+          date,
+          paymentType: "CASH",
         }),
       });
 
@@ -186,7 +215,7 @@ export default function PagosPage() {
       setOpenAbonar(false);
       setAbonarTarget(null);
 
-      await loadMatrix();
+      await loadMatrix(q);
     } catch (e: any) {
       toast.error("No se pudo registrar el abono", { description: e.message });
     }
@@ -221,19 +250,20 @@ export default function PagosPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="flex items-center gap-2">
           <label className="text-xs font-medium opacity-80">Ciclo</label>
+
           <select
-            value={cycle}
-            onChange={(e) => {
-              const v = e.target.value;
-              setCycle(v);
-              setSelectedYear(CYCLE_MAP[v]?.year ?? new Date().getFullYear());
-            }}
+            value={cycleId}
+            onChange={(e) => setCycleId(e.target.value)}
             className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm"
           >
-            <option>regular 2025</option>
-            <option>verano 2025</option>
-            <option>regular 2026</option>
+            {cycles.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nombre}
+              </option>
+            ))}
           </select>
+
+          <div className="text-xs opacity-70">Año: {year}</div>
         </div>
 
         <input
