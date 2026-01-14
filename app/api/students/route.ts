@@ -14,7 +14,7 @@ export async function GET(req: Request) {
   const q = (searchParams.get("q") ?? "").trim();
   const status = (searchParams.get("status") ?? "").trim(); // ACTIVO | RETIRADO | ""
   const page = Math.max(1, Number(searchParams.get("page") ?? "1"));
-  const pageSize = Math.min(50, Math.max(5, Number(searchParams.get("pageSize") ?? "10")));
+  const pageSize = Math.min(500, Math.max(5, Number(searchParams.get("pageSize") ?? "10")));
   const skip = (page - 1) * pageSize;
 
   const where: any = {};
@@ -35,7 +35,12 @@ export async function GET(req: Request) {
     prisma.student.count({ where }),
     prisma.student.findMany({
       where,
-      orderBy: [{ lastNameFather: "asc" }, { lastNameMother: "asc" }, { firstName: "asc" }],
+      orderBy: [
+        { status: "asc" },
+        { lastNameFather: "asc" },
+        { lastNameMother: "asc" },
+        { firstName: "asc" },
+      ],
       skip,
       take: pageSize,
     }),

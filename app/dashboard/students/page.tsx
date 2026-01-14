@@ -89,7 +89,7 @@ export default function EstudiantesPage() {
   const [q, setQ] = useState("");
   const qDebounced = useDebouncedValue(q, 350);
   const [page, setPage] = useState(1);
-  const pageSize = 10;
+  const pageSize = 200;
 
   const [meta, setMeta] = useState<ApiList["meta"]>({
     total: 0,
@@ -263,7 +263,7 @@ export default function EstudiantesPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Estudiantes</h1>
         </div>
-
+        
       <StudentsTable
         data={data}
         onCreate={onCreate}
@@ -278,6 +278,9 @@ export default function EstudiantesPage() {
         onClose={() => setOpen(false)}
         onSubmit={onSubmit}
       />
+      
     </div>
+    
   );
+  
 }

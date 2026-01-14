@@ -2,6 +2,7 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import type { Student } from "./types";
+import { Pencil, Trash2 } from "lucide-react";
 
 export function getStudentColumns(opts: {
   onEdit: (s: Student) => void;
@@ -58,13 +59,13 @@ export function getStudentColumns(opts: {
             onClick={() => opts.onEdit(row.original)}
             className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-xs hover:bg-[var(--color-muted)]"
           >
-            Editar
+             <Pencil className="h-4 w-4 group-hover:scale-110 transition-transform" />
           </button>
           <button
             onClick={() => opts.onDelete(row.original.id)}
             className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-xs hover:bg-[var(--color-muted)]"
           >
-            Eliminar
+             <Trash2 className="h-4 w-4 group-hover:scale-110 transition-transform" />
           </button>
         </div>
       ),

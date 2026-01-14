@@ -68,6 +68,8 @@ export default function StudentsTable({
       {/* Table */}
       <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm">
         <div className="overflow-x-auto">
+          <div className="relative h-[calc(100dvh-259px)] overflow-x-auto overflow-y-auto">
+  
           <table className="min-w-[1100px] w-full text-sm">
             <thead className="bg-[var(--color-muted)]">
               {table.getHeaderGroups().map((hg) => (
@@ -106,7 +108,9 @@ export default function StudentsTable({
                 ))
               )}
             </tbody>
+            
           </table>
+          </div>
         </div>
       </div>
     </div>
