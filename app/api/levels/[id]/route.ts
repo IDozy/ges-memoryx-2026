@@ -6,7 +6,7 @@ type Body = {
   tipo?: "NIVEL" | "TALLER";
 };
 
-export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> } ) {
+export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await ctx.params;
 
@@ -44,10 +44,10 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   }
 }
 
-export async function DELETE(_req: Request, ctx: { params: { id: string } }) {
+export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string }> }
+) {
+  const { id } = await ctx.params;
   try {
-    const { id } = ctx.params;
-
     await prisma.actividad.delete({ where: { id } });
     return NextResponse.json({ ok: true });
   } catch (e: any) {
