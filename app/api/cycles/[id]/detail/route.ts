@@ -21,9 +21,9 @@ export async function GET(
       nombre: true,
       createdAt: true,
       actividades: {
-        where: { tipo: "NIVEL" },
+        select: { id: true, nombre: true, tipo: true, createdAt: true },
         orderBy: { createdAt: "asc" },
-        select: { id: true, nombre: true, createdAt: true },
+        
       },
     },
   });
