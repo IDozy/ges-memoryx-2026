@@ -15,6 +15,7 @@ const nav = [
   { href: "/dashboard", label: "Inicio", icon: HomeIcon },
   { href: "/dashboard/students", label: "Estudiantes", icon: UsersIcon },
   { href: "/dashboard/cycle", label: "Ciclos", icon: BookIcon },
+  { href: "/dashboard/record", label: "Registro Ciclo", icon: BookIcon },
   { href: "/dashboard/payments", label: "Pagos", icon: CreditCardIcon },
 ];
 
