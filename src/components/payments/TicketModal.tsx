@@ -23,20 +23,20 @@ export function BoletaModal({
   const totalPagado = data.pagos.reduce((a, p) => a + p.amount, 0);
 
   async function toDataUrl(url: string) {
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) throw new Error("No se pudo cargar el logo");
-  const blob = await res.blob();
-  return await new Promise<string>((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(String(r.result));
-    r.onerror = reject;
-    r.readAsDataURL(blob);
-  });
-}
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) throw new Error("No se pudo cargar el logo");
+    const blob = await res.blob();
+    return await new Promise<string>((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(String(r.result));
+      r.onerror = reject;
+      r.readAsDataURL(blob);
+    });
+  }
 
 
   async function download() {
-    console.log(data.receiptNo,  ": Cual es el numero de correlativo")
+    console.log(data.receiptNo, ": Cual es el numero de correlativo")
     try {
       const logoUrl = await toDataUrl(`${window.location.origin}/logo-memoryx.png`);
 
@@ -64,10 +64,10 @@ export function BoletaModal({
 
       toast.message("Generando PDF...");
 
-       const pdfInstance = pdf();
+      const pdfInstance = pdf();
       pdfInstance.updateContainer(doc);
       const blob = await pdfInstance.toBlob();
-      
+
       const url = URL.createObjectURL(blob);
 
       const a = document.createElement("a");
@@ -127,17 +127,32 @@ export function BoletaModal({
           <div className="mt-6 flex justify-end gap-3">
             <button
               onClick={download}
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+              className="inline-flex items-center justify-center rounded-xl
+      border border-[var(--color-border)]
+      bg-[var(--color-surface)]
+      px-4 py-2 text-sm font-semibold
+      text-[var(--color-text)]
+      shadow-sm
+      hover:bg-[var(--color-muted)]
+      transition-colors"
             >
-              DESCARGAR PDF
+              Descargar PDF
             </button>
+
             <button
               onClick={onClose}
-              className="rounded-md border border-fuchsia-400 px-4 py-2 text-sm font-semibold text-fuchsia-600 hover:bg-fuchsia-50"
+              className="inline-flex items-center justify-center rounded-xl
+      border border-[var(--color-border)]
+      bg-transparent
+      px-4 py-2 text-sm font-medium
+      text-[var(--color-text-muted)]
+      hover:bg-[var(--color-muted)]
+      transition-colors"
             >
-              CERRAR
+              Cerrar
             </button>
           </div>
+
         </div>
       </div>
     </div>

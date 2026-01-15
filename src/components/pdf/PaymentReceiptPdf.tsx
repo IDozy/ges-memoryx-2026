@@ -33,8 +33,8 @@ type Props = {
   nota?: string;
 };
 
-const PURPLE = "#3b0a7a";
-const PURPLE_2 = "#5a0aa0";
+const PURPLE = "#29008e";
+const PURPLE_2 = "#650354";
 
 const styles = StyleSheet.create({
   page: {
