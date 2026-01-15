@@ -38,6 +38,7 @@ export default function PagosPage() {
     mes: string;
     total: number;
     pagos: PagoItem[];
+    receiptNo?: string;
   } | null>(null);
 
   const [openAbonar, setOpenAbonar] = useState(false);
@@ -221,12 +222,28 @@ export default function PagosPage() {
     }
   }
 
-  function generarBoleta(student: Estudiante, mesIndex: number) {
+  async function generarBoleta(student: Estudiante, mesIndex: number) {
     const mesName = MESES[mesIndex];
     const mes = student.pagosPorMes[mesIndex];
 
     if (!mes) {
       toast.error("No hay datos del mes");
+      return;
+    }
+
+    const month = mesIndex + 1;
+
+    const r = await fetch(
+      `/api/receipts/by-month?studentId=${student.id}&cycleId=${cycleId}&year=${year}&month=${month}`
+    );
+
+    const j = await r.json();
+    const receiptNo = j.receipt?.receiptNo as string | undefined;
+
+    if (!receiptNo) {
+      toast.error("Aún no existe boleta", {
+        description: "Completa el pago para generar la boleta.",
+      });
       return;
     }
 
@@ -236,6 +253,7 @@ export default function PagosPage() {
       mes: mesName,
       total: mes.total,
       pagos: mes.pagos,
+      receiptNo,
     });
 
     setOpenBoleta(true);

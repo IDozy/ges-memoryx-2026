@@ -16,6 +16,7 @@ export function BoletaModal({
     mes: string;
     total: number;
     pagos: PagoItem[];
+    receiptNo?: string;
   };
   onClose: () => void;
 }) {
@@ -35,6 +36,7 @@ export function BoletaModal({
 
 
   async function download() {
+    console.log(data.receiptNo,  ": Cual es el numero de correlativo")
     try {
       const logoUrl = await toDataUrl(`${window.location.origin}/logo-memoryx.png`);
 
@@ -47,7 +49,7 @@ export function BoletaModal({
               ? formatDateDMY(data.pagos[0].date)
               : formatDateDMY(new Date().toISOString().slice(0, 10))
           }
-          reciboNro={"1301-1000"}
+          reciboNro={data.receiptNo ?? ""}
           tutor={data.tutor}
           estudiante={data.estudiante}
           pagoA={"MemoryX"}
