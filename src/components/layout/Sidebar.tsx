@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 
 type Props = {
@@ -8,8 +9,6 @@ type Props = {
   collapsed?: boolean;
   onToggle?: () => void;
 };
-
-
 
 const nav = [
   { href: "/dashboard", label: "Inicio", icon: HomeIcon },
@@ -24,58 +23,53 @@ export default function Sidebar({ onNavigate, collapsed = false, onToggle }: Pro
 
   return (
     <aside
-     className={[
-  "relative h-dvh border-r border-[var(--color-border)] bg-[var(--color-surface)] transition-all duration-300",
-  collapsed ? "w-[72px] p-0" : "w-[280px] p-4",
-].join(" ")}
-
+      className={[
+        "relative h-dvh border-r border-[var(--color-border)] bg-[var(--color-surface)] transition-all duration-300",
+        collapsed ? "w-[72px] p-0" : "w-[280px] p-3 pt-0",
+      ].join(" ")}
     >
       <button
         onClick={() => onToggle?.()}
         aria-label="Toggle sidebar"
         className="
-    absolute
-    -right-4
-    top-10
-    z-[100]
-    flex
-    h-7
-    w-7
-    items-center
-    justify-center
-    rounded-full
-    border
-    border-[var(--color-border)]
-    bg-[var(--color-surface)]
-    text-xs
-    shadow-lg
-    hover:bg-[var(--color-muted)]
-  "
+          absolute -right-4 top-10 z-[100]
+          flex h-7 w-7 items-center justify-center
+          rounded-full border border-[var(--color-border)]
+          bg-[var(--color-surface)] text-xs shadow-lg
+          hover:bg-[var(--color-muted)]
+        "
       >
         {collapsed ? "➤" : "🠸"}
       </button>
 
-
-      {/* Brand */}
+      {/* Brand (sin borde redondeado / sin padding extra cuando está expandido) */}
       <div
-  className={[
-    "mb-5 border border-[var(--color-border)] bg-[var(--color-muted)] transition-all duration-300",
-    collapsed ? "rounded-none p-[16px] text-center" : "rounded-2xl p-4",
-  ].join(" ")}
->
-  <div className="text-base font-semibold">
-    {collapsed ? "GM" : "Ges-Memoryx"}
-  </div>
+        className={[
+          "border-b border-[var(--color-border)]",
+          collapsed ? "px-0 " : "px-0 ",
+        ].join(" ")}
+      >
+        <div className={collapsed ? "flex justify-center" : "flex items-center gap-3"}>
+          <Image
+            src="/logo-memoryx.png" // <-- cambia si tu archivo se llama distinto
+            alt="Memoryx"
+            width={collapsed ? 57 : 70}
+            height={collapsed ? 40 : 60}
+            className="object-contain"
+            priority
+          />
 
-  {!collapsed && (
-    <div className="text-xs opacity-70">Dashboard • 2026</div>
-  )}
-</div>
-
-
+          {!collapsed && (
+            <div className="leading-tight">
+              <div className="text-base font-semibold tracking-tight">Memoryx</div>
+              <div className="text-xs opacity-70">Dashboard • 2026</div>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Nav */}
-      <nav className="space-y-1">
+      <nav className={collapsed ? "mt-3 space-y-1 px-0" : "mt-3 space-y-1"}>
         {nav.map((item) => {
           const active =
             pathname === item.href ||
@@ -100,8 +94,6 @@ export default function Sidebar({ onNavigate, collapsed = false, onToggle }: Pro
           );
         })}
       </nav>
-
-
     </aside>
   );
 }
