@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "AttendanceRecord" ADD COLUMN     "markedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;

@@ -88,9 +88,10 @@ model Student {
   actividades StudentActividad[]
   payments    Payment[]
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  receipts  Receipt[]
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  receipts   Receipt[]
+  attendance AttendanceRecord[]
 
   @@index([lastNameFather, lastNameMother, firstName])
 }
@@ -122,7 +123,8 @@ model Actividad {
   nombre String
   tipo   TipoActividad @default(NIVEL)
 
-  estudiantes StudentActividad[]
+  estudiantes        StudentActividad[]
+  attendanceSessions AttendanceSession[]
 
   profesorId String?
   profesor   Profesor? @relation(fields: [profesorId], references: [id], onDelete: SetNull)
@@ -250,4 +252,57 @@ model Receipt {
   @@unique([studentId, cycleId, month, year])
   @@index([cycleId, year, month])
   @@index([studentId, year, month])
+}
+
+enum AttendanceStatus {
+  PRESENTE
+  AUSENTE
+  TARDE
+  JUSTIFICADO
+}
+
+model AttendanceSession {
+  id String @id @default(uuid())
+
+  actividadId String
+  actividad   Actividad @relation(fields: [actividadId], references: [id], onDelete: Cascade)
+
+  // Fecha de asistencia (solo día). Usa DateTime igual, pero tú normalizas a 00:00 en backend.
+  date DateTime
+
+  note String?
+
+  records AttendanceRecord[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 1 sesión por actividad por día
+  @@unique([actividadId, date])
+  @@index([date])
+  @@index([actividadId])
+}
+
+model AttendanceRecord {
+  id String @id @default(uuid())
+
+  sessionId String
+  session   AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  status AttendanceStatus @default(AUSENTE)
+
+  // opcional: nota por estudiante (ej. “llegó 10 min tarde”)
+  comment String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  markedAt DateTime @default(now())
+
+  // 1 registro por alumno por sesión
+  @@unique([sessionId, studentId])
+  @@index([studentId])
+  @@index([sessionId])
 }
