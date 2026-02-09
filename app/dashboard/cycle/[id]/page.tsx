@@ -47,7 +47,7 @@ export default function GestionarCicloPage() {
   async function load() {
     setLoading(true);
     try {
-      const res = await fetch(`/api/cycles/${cicloId}/detail`, { cache: "no-store" });
+      const res = await fetch(`/api/academic-cycles/${cicloId}/detail`, { cache: "no-store" });
       if (!res.ok) throw new Error("No se pudo cargar el ciclo");
       const json = await res.json();
       setCiclo(json.ciclo);
@@ -100,7 +100,7 @@ export default function GestionarCicloPage() {
 
     try {
       if (formMode === "create") {
-        const res = await fetch(`/api/cycles/${cicloId}/levels`, {
+        const res = await fetch(`/api/academic-cycles/${cicloId}/levels`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ nombre: v, tipo }),
