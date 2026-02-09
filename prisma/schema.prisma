@@ -369,7 +369,6 @@ model ParentProfile {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   relationship     String? // father, mother, guardian
-  occupation       String?
   emergencyContact Boolean @default(false)
 
   studentRelations ParentStudentRelation[]
