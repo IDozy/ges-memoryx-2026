@@ -56,7 +56,7 @@ export default function PagosPage() {
   // ✅ 1) cargar ciclos reales
   async function loadCycles() {
     try {
-      const res = await fetch("/api/cycles", { cache: "no-store" });
+      const res = await fetch("/api/academic-cycles", { cache: "no-store" });
       if (!res.ok) throw new Error("No se pudo cargar ciclos");
       const json = await res.json();
       const items: CycleItem[] = json.items ?? [];

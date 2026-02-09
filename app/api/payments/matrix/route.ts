@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/src/shared/db/prisma";
 
+export const runtime = "nodejs";
+
 function month1toIndex(m: number) {
   return m - 1; // BD 1..12  => UI 0..11
 }
@@ -18,12 +20,13 @@ export async function GET(req: Request) {
     return NextResponse.json({ message: "year inválido" }, { status: 400 });
   }
 
-  const whereStudent: any = {};
-
-  // ✅ SOLO estudiantes asignados a actividades de ESTE ciclo
-  whereStudent.actividades = {
-    some: {
-      actividad: { cicloId : cycleId },
+  const whereStudent: any = {
+    // ✅ solo estudiantes con matrícula en secciones de este ciclo
+    sectionEnrollments: {
+      some: {
+        section: { cycleId },
+        status: "ACTIVE", // opcional: solo matrículas activas
+      },
     },
   };
 
@@ -32,7 +35,6 @@ export async function GET(req: Request) {
       { firstName: { contains: q, mode: "insensitive" } },
       { lastNameFather: { contains: q, mode: "insensitive" } },
       { lastNameMother: { contains: q, mode: "insensitive" } },
-      { tutor: { contains: q, mode: "insensitive" } },
       { phone: { contains: q, mode: "insensitive" } },
     ];
   }
@@ -40,15 +42,29 @@ export async function GET(req: Request) {
   const students = await prisma.student.findMany({
     where: whereStudent,
     orderBy: [
-      { status: "asc" }, // ACTIVO primero
+      { status: "asc" }, // ACTIVE primero normalmente
       { lastNameFather: "asc" },
       { lastNameMother: "asc" },
       { firstName: "asc" },
     ],
-    include: {
+    select: {
+      id: true,
+      firstName: true,
+      lastNameFather: true,
+      lastNameMother: true,
+      status: true,
+      phone: true,
       payments: {
         where: { cycleId, year },
-        include: { paid: { orderBy: { date: "asc" } } },
+        select: {
+          month: true,
+          total: true,
+          status: true,
+          details: {
+            orderBy: { date: "asc" },
+            select: { date: true, amount: true },
+          },
+        },
       },
     },
   });
@@ -64,22 +80,23 @@ export async function GET(req: Request) {
     for (const p of s.payments) {
       const idx = month1toIndex(p.month);
       pagosPorMes[idx] = {
-        total: p.total,
-        pagos: p.paid.map((d) => ({
+        total: Number(p.total),
+        pagos: p.details.map((d) => ({
           date: d.date.toISOString().slice(0, 10),
-          amount: d.amount,
+          amount: Number(d.amount),
         })),
-        // OJO: si tu status NO_REGISTRADO significa “no existe Payment”, esto no aplica.
-        // Si sí usas el enum, ok.
-        noRegistrado: p.status === "NO_REGISTRADO",
+        // ✅ ahora: "no registrado" significa que NO existe Payment.
+        // Si existe Payment, entonces ya está registrado:
+        noRegistrado: false,
+        status: p.status, // por si tu UI lo quiere mostrar
       };
     }
 
     return {
       id: s.id,
       nombreCompleto,
-      tutor: s.tutor ?? "",
       status: s.status,
+      phone: s.phone ?? "",
       pagosPorMes,
     };
   });

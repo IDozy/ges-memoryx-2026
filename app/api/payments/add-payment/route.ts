@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/src/shared/db/prisma";
 
-const VALID_TYPES = new Set(["CASH", "YAPE", "PLIN", "TRANSFER"]);
+export const runtime = "nodejs";
+
+const VALID_METHODS = new Set(["CASH", "YAPE", "PLIN", "TRANSFER", "DEPOSIT", "CREDIT_CARD", "DEBIT_CARD", "OTHER"]);
 
 export async function POST(req: Request) {
   const body = await req.json();
@@ -13,8 +15,12 @@ export async function POST(req: Request) {
   const amount = Number(body.amount);
   const dateStr = String(body.date ?? "").trim();
 
-  const paymentTypeRaw = String(body.paymentType ?? "CASH").trim().toUpperCase();
-  const paymentType = VALID_TYPES.has(paymentTypeRaw) ? (paymentTypeRaw as any) : null;
+  // ✅ nuevo nombre: paymentMethod
+  const methodRaw = String(body.paymentMethod ?? body.paymentType ?? "CASH").trim().toUpperCase();
+  const paymentMethod = VALID_METHODS.has(methodRaw) ? (methodRaw as any) : null;
+
+  // ✅ requerido por Receipt (en tu schema: issuedBy NOT NULL)
+  const issuedBy = String(body.issuedBy ?? "").trim();
 
   if (!studentId || !cycleId) {
     return NextResponse.json({ message: "studentId y cycleId son requeridos" }, { status: 400 });
@@ -28,8 +34,11 @@ export async function POST(req: Request) {
   if (!Number.isFinite(amount) || amount <= 0) {
     return NextResponse.json({ message: "amount inválido" }, { status: 400 });
   }
-  if (!paymentType) {
-    return NextResponse.json({ message: "paymentType inválido" }, { status: 400 });
+  if (!paymentMethod) {
+    return NextResponse.json({ message: "paymentMethod inválido" }, { status: 400 });
+  }
+  if (!issuedBy) {
+    return NextResponse.json({ message: "issuedBy es requerido para emitir boleta" }, { status: 400 });
   }
 
   const date = dateStr ? new Date(dateStr + "T00:00:00") : new Date();
@@ -39,49 +48,56 @@ export async function POST(req: Request) {
 
   try {
     const result = await prisma.$transaction(async (tx) => {
-      // ✅ MODO A: el mes debe estar registrado (Payment ya debe existir)
+      // ✅ mes debe existir (Payment pre-creado)
       const payment = await tx.payment.findUnique({
         where: { studentId_cycleId_month_year: { studentId, cycleId, month, year } },
         select: { id: true, total: true },
       });
 
       if (!payment) {
-        // Esto evita crear pagos con total "inventado"
         throw new Error("MES_NO_REGISTRADO");
       }
 
+      // ✅ crear detalle
       await tx.paymentDetail.create({
         data: {
           paymentId: payment.id,
           amount,
           date,
-          paymentType,
+          paymentMethod, // ✅ nuevo
         },
       });
 
-      // recalcular totalPaid
+      // ✅ recalcular totalPaid
       const agg = await tx.paymentDetail.aggregate({
         where: { paymentId: payment.id },
         _sum: { amount: true },
       });
+
       const totalPaid = Number(agg._sum.amount ?? 0);
 
-      // status
+      // ✅ status nuevo
       const status =
-        totalPaid <= 0 ? "NO_PAGO" :
-        totalPaid >= payment.total ? "PAGADO" :
-        "PENDIENTE";
+        totalPaid <= 0 ? "UNPAID" :
+        totalPaid >= Number(payment.total) ? "PAID" :
+        "PARTIAL";
 
       const updated = await tx.payment.update({
         where: { id: payment.id },
-        data: { totalPaid, status },
-        include: { paid: { orderBy: { date: "asc" } } },
+        data: {
+          totalPaid,
+          status,
+          balance: Number(payment.total) - totalPaid, // tu schema tiene balance
+          paidDate: status === "PAID" ? new Date() : null,
+        },
+        include: {
+          details: { orderBy: { date: "asc" } }, // ✅ antes paid
+        },
       });
 
       let receipt: { id: string; correlativo: number; receiptNo: string | null } | null = null;
 
-      if (updated.status === "PAGADO") {
-        // crea o actualiza receipt
+      if (updated.status === "PAID") {
         receipt = await tx.receipt.upsert({
           where: { paymentId: updated.id },
           create: {
@@ -90,21 +106,28 @@ export async function POST(req: Request) {
             cycleId,
             month,
             year,
+            concept: updated.concept,
             total: updated.total,
             totalPaid: updated.totalPaid,
-            pagosJson: updated.paid.map((p) => ({
+
+            issuedBy, // ✅ obligatorio
+            paymentsJson: updated.details.map((p) => ({
               date: p.date.toISOString().slice(0, 10),
-              amount: p.amount,
-              paymentType: p.paymentType,
+              amount: Number(p.amount),
+              paymentMethod: p.paymentMethod,
+              reference: p.reference ?? null,
             })),
           },
           update: {
+            concept: updated.concept,
             total: updated.total,
             totalPaid: updated.totalPaid,
-            pagosJson: updated.paid.map((p) => ({
+            issuedBy, // lo puedes mantener igual o no actualizarlo
+            paymentsJson: updated.details.map((p) => ({
               date: p.date.toISOString().slice(0, 10),
-              amount: p.amount,
-              paymentType: p.paymentType,
+              amount: Number(p.amount),
+              paymentMethod: p.paymentMethod,
+              reference: p.reference ?? null,
             })),
           },
           select: { id: true, correlativo: true, receiptNo: true },
@@ -112,7 +135,7 @@ export async function POST(req: Request) {
 
         // ✅ generar receiptNo si aún está null
         if (!receipt.receiptNo) {
-          const prefix = "REC"; // luego puedes cambiar a REG/VER leyendo el ciclo
+          const prefix = "REC";
           const receiptNo = `${prefix}-${year}-${String(receipt.correlativo).padStart(6, "0")}`;
 
           receipt = await tx.receipt.update({
@@ -135,8 +158,9 @@ export async function POST(req: Request) {
       );
     }
 
+    console.error("[PAYMENT_DETAIL_POST]", e);
     return NextResponse.json(
-      { message: "Error al registrar abono" },
+      { message: e?.message ?? "Error al registrar abono" },
       { status: 500 }
     );
   }
