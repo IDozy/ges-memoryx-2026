@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../src/generated/prisma"
 }
 
@@ -8,163 +8,751 @@ datasource db {
 }
 
 /**
- * ------------------ ENUMS ------------------
+ * ============================================================
+ * ENUMS - TIPOS DE DATOS
+ * ============================================================
  */
 
-enum Role {
-  USER
-  ADMIN
+// ==================== USUARIOS Y ROLES ====================
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  LOCKED
 }
 
-enum TipoActividad {
-  NIVEL
-  TALLER
+enum UserRoleType {
+  ADMIN
+  TEACHER
+  PARENT
+  STAFF
+  ACCOUNTANT
 }
+
+// ==================== ESTRUCTURA ACADÉMICA ====================
 
 enum Gender {
   M
   F
+  OTHER
 }
 
 enum StudentStatus {
-  ACTIVO
-  RETIRADO
+  ACTIVE
+  INACTIVE
+  GRADUATED
+  SUSPENDED
+  WITHDRAWN
 }
+
+enum CourseType {
+  REGULAR
+  WORKSHOP
+  EXTRA_CURRICULAR
+  SPECIAL
+}
+
+enum CycleStatus {
+  ACTIVE
+  INACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+enum CourseStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+enum SectionStatus {
+  ACTIVE
+  INACTIVE
+  CANCELLED
+  COMPLETED
+}
+
+enum SessionStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  POSTPONED
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  DROPPED
+  TRANSFERRED
+  EXPULSED
+  GRADUATED
+}
+
+// ==================== CALIFICACIONES ====================
+
+enum AssessmentType {
+  QUIZ
+  EXAM
+  PROJECT
+  HOMEWORK
+  PARTICIPATION
+  PRESENTATION
+  LAB
+  ORAL
+  WRITTEN
+}
+
+enum AssessmentStatus {
+  DRAFT
+  PUBLISHED
+  GRADED
+  ARCHIVED
+}
+
+// ==================== ASISTENCIA ====================
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+  JUSTIFIED
+}
+
+// ==================== FINANZAS ====================
 
 enum PaymentStatus {
-  NO_PAGO
-  PENDIENTE
-  PAGADO
-  NO_REGISTRADO
+  UNPAID
+  PENDING
+  PARTIAL
+  PAID
+  OVERDUE
+  WAIVED
+  REFUNDED
 }
 
-enum PaymentType {
+enum PaymentMethod {
   CASH
   YAPE
   PLIN
   TRANSFER
+  DEPOSIT
+  CREDIT_CARD
+  DEBIT_CARD
+  OTHER
+}
+
+enum ReceiptStatus {
+  DRAFT
+  ISSUED
+  PRINTED
+  CANCELLED
+}
+
+// ==================== BIBLIOTECA ====================
+
+enum BookStatus {
+  ACTIVE
+  INACTIVE
+  LOST
+  DAMAGED
+  ARCHIVED
+}
+
+enum BorrowStatus {
+  ACTIVE
+  RETURNED
+  OVERDUE
+  LOST
+  DAMAGED
+}
+
+// ==================== COMUNICACIÓN ====================
+
+enum MessageType {
+  DIRECT
+  GROUP
+  ANNOUNCEMENT
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+  DELETED
+}
+
+enum AnnouncementStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum AnnouncementPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum AnnouncementAudience {
+  ALL
+  STUDENTS
+  PARENTS
+  TEACHERS
+  STAFF
+}
+
+// ==================== AUDITORÍA ====================
+
+enum LoginStatus {
+  SUCCESS
+  FAILED
+  LOCKED
+}
+
+enum AuditAction {
+  CREATE
+  READ
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  EXPORT
+  IMPORT
+  DOWNLOAD
+}
+
+// ============================================================
+//              ENUMS ADICIONALES - DATOS PERÚ
+// ============================================================
+
+enum DocumentType {
+  DNI
+  CE
+  PASSPORT
+}
+
+enum BankAccountType {
+  CC // Cuenta Corriente
+  CA // Caja de Ahorro
 }
 
 /**
- * ------------------ AUTH ------------------
+ * ============================================================
+ * MÓDULO 1: AUTENTICACIÓN Y RBAC
+ * ============================================================
  */
 
+/**
+ * RBAC: Un usuario puede tener múltiples roles
+ * Ej: ADMIN + TEACHER, o STAFF + ACCOUNTANT
+ */
 model User {
-  id             String    @id @default(uuid())
-  name           String?
-  email          String    @unique
+  id             String     @id @default(uuid())
+  email          String     @unique
   emailVerified  DateTime?
   hashedPassword String
-  role           Role      @default(USER)
+  status         UserStatus @default(ACTIVE)
+
+  firstName String?
+  lastName  String?
+  phone     String?
+  avatar    String?
+
+  userRoles UserRole[]
+
+  lastLogin DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // ✅ perfiles (opuestos)
+  teacherProfile TeacherProfile?
+  parentProfile  ParentProfile?
+  staffProfile   StaffProfile?
+
+  // ✅ existentes
+  createdAssessments Assessment[]   @relation("AssessmentCreator")
+  gradedAssessments  StudentGrade[] @relation("GradeGrader")
+  loginLogs          LoginLog[]
+  auditLogs          AuditLog[]
+  sentMessages       Message[]      @relation("MessageSender")
+  receivedMessages   Message[]      @relation("MessageRecipient")
+  announcements      Announcement[]
+
+  approvedPayrolls TeacherPayroll[] @relation("PayrollApprover")
+  paidPayrolls     TeacherPayroll[] @relation("PayrollPayer")
+
+  issuedPayrollReceipts PayrollReceipt[] @relation("ReceiptIssuer")
+
+  recordedTeacherAttendance      TeacherAttendanceClass[] @relation("AttendanceRecorder")
+  recordedTeacherEventAttendance TeacherAttendanceEvent[] @relation("EventAttendanceRecorder")
+
+  // ✅ FALTABAN (opuestos de relaciones a User)
+  markedAttendanceRecords AttendanceRecord[] @relation("AttendanceMarker")
+  issuedReceipts          Receipt[]          @relation("ReceiptIssuerUser")
+  issuedLibraryBorrows    LibraryBorrow[]    @relation("LibraryBorrowIssuer")
+  uploadedMaterials       CourseMaterial[]   @relation("MaterialUploader")
+  teacherContractsSigned  TeacherContract[]  @relation("TeacherContractSigner")
+  organizedTeacherEvents  TeacherEvent[]     @relation("TeacherEventOrganizer")
+
+  @@index([email])
+  @@index([status])
+  @@index([createdAt])
+}
+
+/**
+ * Tabla de roles (catálogo)
+ */
+model Role {
+  id          String       @id @default(uuid())
+  name        UserRoleType @unique
+  description String?
+
+  // Relación N:M con usuarios
+  userRoles UserRole[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 /**
- * ------------------ CORE ------------------
+ * Tabla join: Usuarios ↔ Roles (N:M)
  */
-
-model Student {
+model UserRole {
   id String @id @default(uuid())
 
-  firstName      String
-  lastNameFather String
-  lastNameMother String
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  birthDate DateTime?
-  gender    Gender?
+  roleId String
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
-  grade  String?
-  school String?
+  assignedAt DateTime @default(now())
+  assignedBy String? // userId who assigned this role
 
-  tutor        String?
-  phone        String?
-  address      String?
-  pickupPerson String?
-
-  status StudentStatus @default(ACTIVO)
-
-  actividades StudentActividad[]
-  payments    Payment[]
-
-  createdAt  DateTime           @default(now())
-  updatedAt  DateTime           @updatedAt
-  receipts   Receipt[]
-  attendance AttendanceRecord[]
-
-  @@index([lastNameFather, lastNameMother, firstName])
+  @@unique([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
 }
 
-model Profesor {
+/**
+ * Perfiles especializados (uno por rol activo)
+ * NOTA: Validar en aplicación que un usuario no tenga múltiples perfiles del mismo tipo
+ */
+model TeacherProfile {
   id     String @id @default(uuid())
-  nombre String
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  actividades Actividad[]
+  employeeCode   String   @unique
+  specialty      String?
+  qualifications String?
+  bio            String?
+  hireDate       DateTime @default(now())
+  department     String?
+
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  contracts         TeacherContract[]
+  attendanceClasses TeacherAttendanceClass[]
+  attendanceEvents  TeacherAttendanceEvent[]
+  eventAttendances  TeacherEventAttendee[]
+  sections          ClassSection[]
+
+  @@index([employeeCode])
+}
+
+model ParentProfile {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  relationship     String? // father, mother, guardian
+  occupation       String?
+  emergencyContact Boolean @default(false)
+
+  studentRelations ParentStudentRelation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
-model Ciclo {
+model StaffProfile {
   id     String @id @default(uuid())
-  nombre String @unique // "Regular 2026", "Verano 2026"
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  actividades Actividad[]
+  employeeCode String   @unique
+  position     String?
+  department   String?
+  hireDate     DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([employeeCode])
+}
+
+model ParentStudentRelation {
+  id       String        @id @default(uuid())
+  parentId String
+  parent   ParentProfile @relation(fields: [parentId], references: [id], onDelete: Cascade)
+
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  relationship String? // father, mother, guardian, tutor
+  isEmergency  Boolean @default(false)
+  notes        String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([parentId, studentId])
+  @@index([parentId])
+  @@index([studentId])
+  @@index([isEmergency])
+}
+
+/**
+ * ============================================================
+ * MÓDULO 2: ESTRUCTURA ACADÉMICA
+ * ============================================================
+ */
+
+model AcademicCycle {
+  id        String      @id @default(uuid())
+  name      String      @unique // "Regular 2026", "Summer 2026"
+  year      Int
+  period    String // "semester", "quarter", "trimester", "annual"
+  startDate DateTime
+  endDate   DateTime
+  status    CycleStatus @default(ACTIVE)
+
+  courses     Course[]
+  sections    ClassSection[]
+  enrollments Enrollment[]
   payments    Payment[]
   receipts    Receipt[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([year])
+  @@index([status])
+  @@index([startDate, endDate])
 }
 
-model Actividad {
-  id     String        @id @default(uuid())
-  nombre String
-  tipo   TipoActividad @default(NIVEL)
+model Course {
+  id          String       @id @default(uuid())
+  name        String
+  code        String       @unique // "MATH-5", "COMM-3"
+  description String?
+  courseType  CourseType   @default(REGULAR)
+  gradeLevel  String // "5th Grade", "3rd Secondary"
+  credits     Int          @default(0)
+  status      CourseStatus @default(ACTIVE)
 
-  estudiantes        StudentActividad[]
-  attendanceSessions AttendanceSession[]
+  cycleId String
+  cycle   AcademicCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
 
-  profesorId String?
-  profesor   Profesor? @relation(fields: [profesorId], references: [id], onDelete: SetNull)
-
-  cicloId String?
-  ciclo   Ciclo?  @relation(fields: [cicloId], references: [id], onDelete: SetNull)
+  sections  ClassSection[]
+  materials CourseMaterial[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([tipo])
-  @@index([cicloId])
-  @@index([profesorId])
+  @@index([code])
+  @@index([gradeLevel])
+  @@index([cycleId])
+  @@index([status])
 }
 
-model StudentActividad {
+model ClassSection {
+  id          String @id @default(uuid())
+  name        String // "A", "B", "Afternoon"
+  sectionCode String @unique // "MATH-5-A-2026"
+
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  teacherId String?
+  teacher   TeacherProfile? @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+
+  cycleId String
+  cycle   AcademicCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+
+  maxCapacity       Int           @default(30)
+  currentEnrollment Int           @default(0) // ⚠️ Campo derivado - mantener con triggers/transacciones
+  room              String?
+  status            SectionStatus @default(ACTIVE)
+
+  schedules   SectionSchedule[]
+  sessions    ClassSession[]
+  enrollments SectionEnrollment[]
+  assessments Assessment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([courseId, name, cycleId])
+  @@index([sectionCode])
+  @@index([cycleId])
+  @@index([teacherId])
+  @@index([status])
+}
+
+/**
+ * Horario recurrente (Lunes/Miércoles 15:00-16:30)
+ * Usa @db.Time para almacenar solo hora sin fecha
+ */
+model SectionSchedule {
+  id        String       @id @default(uuid())
+  sectionId String
+  section   ClassSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  dayOfWeek Int // 1=Monday, 7=Sunday
+  startTime DateTime @db.Time(0) // Solo hora HH:mm:ss
+  endTime   DateTime @db.Time(0)
+  room      String?
+
+  createdAt DateTime @default(now())
+
+  @@unique([sectionId, dayOfWeek, startTime])
+  @@index([sectionId])
+  @@index([dayOfWeek])
+}
+
+/**
+ * Sesión puntual (evento específico con fecha y hora completas)
+ */
+model ClassSession {
+  id        String       @id @default(uuid())
+  sectionId String
+  section   ClassSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  startsAt DateTime // Fecha + hora completa
+  endsAt   DateTime // Fecha + hora completa
+  topic    String?
+  notes    String?
+  status   SessionStatus @default(SCHEDULED)
+
+  // Relaciones
+  attendance        AttendanceRecord[]
+  teacherAttendance TeacherAttendanceClass[]
+
+  createdAt DateTime @default(now())
+
+  @@index([sectionId])
+  @@index([startsAt])
+  @@index([status])
+}
+
+/**
+ * ============================================================
+ * MÓDULO 3: ESTUDIANTES E INSCRIPCIONES
+ * ============================================================
+ */
+
+model Student {
+  id          String @id @default(uuid())
+  studentCode String @unique // "STU-2026-0001"
+
+  // Datos personales
+  firstName      String
+  lastNameFather String
+  lastNameMother String
+  birthDate      DateTime?
+  gender         Gender?
+  nationality    String?
+
+  // Datos académicos
+  grade  String?
+  school String?
+
+  // Datos de contacto
+  phone        String?
+  address      String?
+  pickupPerson String?
+
+  status StudentStatus @default(ACTIVE)
+
+  // Relaciones
+  enrollments        Enrollment[]
+  sectionEnrollments SectionEnrollment[]
+  payments           Payment[]
+  receipts           Receipt[]
+  attendance         AttendanceRecord[]
+  grades             StudentGrade[]
+  borrowings         LibraryBorrow[]
+  parentRelations    ParentStudentRelation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([studentCode])
+  @@index([lastNameFather, lastNameMother, firstName])
+  @@index([status])
+  @@index([grade])
+}
+
+model Enrollment {
+  id        String  @id @default(uuid())
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  cycleId String
+  cycle   AcademicCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+
+  enrollmentDate DateTime         @default(now())
+  status         EnrollmentStatus @default(ACTIVE)
+  gradeLevel     String?
+  notes          String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentId, cycleId])
+  @@index([studentId])
+  @@index([cycleId])
+  @@index([status])
+}
+
+model SectionEnrollment {
+  id        String       @id @default(uuid())
+  sectionId String
+  section   ClassSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  enrolledAt  DateTime         @default(now())
+  status      EnrollmentStatus @default(ACTIVE)
+  finalGrade  Decimal?         @db.Decimal(5, 2)
+  finalStatus String? // passed, failed, incomplete
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([sectionId, studentId])
+  @@index([sectionId])
+  @@index([studentId])
+  @@index([status])
+}
+
+/**
+ * ============================================================
+ * MÓDULO 4: CALIFICACIONES Y EVALUACIONES
+ * ============================================================
+ */
+
+model Assessment {
+  id             String         @id @default(uuid())
+  title          String
+  assessmentType AssessmentType
+  description    String?
+
+  sectionId String
+  section   ClassSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  totalPoints Decimal   @db.Decimal(5, 2)
+  weight      Decimal   @default(1.00) @db.Decimal(3, 2) // Weight in final grade (0-1 or percentage)
+  dueDate     DateTime?
+
+  status AssessmentStatus @default(DRAFT)
+
+  createdBy String
+  creator   User   @relation("AssessmentCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+
+  grades StudentGrade[]
+
+  createdAt   DateTime  @default(now())
+  publishedAt DateTime?
+  updatedAt   DateTime  @updatedAt
+
+  @@index([sectionId])
+  @@index([assessmentType])
+  @@index([dueDate])
+  @@index([status])
+}
+
+model StudentGrade {
   id String @id @default(uuid())
 
-  studentId   String
-  actividadId String
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
 
-  student   Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  actividad Actividad @relation(fields: [actividadId], references: [id], onDelete: Cascade)
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  score      Decimal? @db.Decimal(5, 2) // NULL = not graded yet
+  maxScore   Decimal  @db.Decimal(5, 2) // Cached from assessment.totalPoints
+  percentage Decimal? @db.Decimal(5, 2) // Calculated: (score/maxScore) * 100
+
+  feedback String?
+  comments String?
+
+  gradedBy String?
+  grader   User?     @relation("GradeGrader", fields: [gradedBy], references: [id], onDelete: SetNull)
+  gradedAt DateTime?
+
+  // For final grades
+  isFinalGrade Boolean @default(false)
+  finalComment String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([studentId, actividadId])
+  @@unique([assessmentId, studentId])
   @@index([studentId])
-  @@index([actividadId])
+  @@index([assessmentId])
+  @@index([gradedAt])
+  @@index([percentage])
 }
 
 /**
- * ------------------ PAYMENTS ------------------
+ * ============================================================
+ * MÓDULO 5: ASISTENCIA (SIMPLIFICADO)
+ * ============================================================
  */
+
 /**
- * Regla para tu tabla:
- * - 1 Payment por estudiante + ciclo + mes + año (una celda)
- * - PaymentDetail = abonos (parciales)
- * - Receipt = boleta histórica emitida cuando totalPaid >= total
+ * ✅ Simplificado: AttendanceRecord apunta directamente a ClassSession
+ * Elimina AttendanceSession redundante
+ */
+model AttendanceRecord {
+  id String @id @default(uuid())
+
+  sessionId String
+  session   ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  status  AttendanceStatus @default(ABSENT)
+  comment String? // "Arrived 10 min late", "Medical appointment"
+
+  markedBy String?
+  marker   User?    @relation("AttendanceMarker", fields: [markedBy], references: [id], onDelete: SetNull)
+  markedAt DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([sessionId, studentId])
+  @@index([studentId])
+  @@index([sessionId])
+  @@index([status])
+  @@index([markedAt])
+}
+
+/**
+ * ============================================================
+ * MÓDULO 6: FINANZAS (DECIMAL FIX)
+ * ============================================================
  */
 
 model Payment {
@@ -174,16 +762,21 @@ model Payment {
   student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   cycleId String
-  cycle   Ciclo  @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  cycle   AcademicCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
 
-  month Int // Recomendado: 1..12 (puedes usar 0..11 si tu front así lo maneja)
+  month Int // 1-12
   year  Int
 
-  total     Float
-  totalPaid Float         @default(0)
-  status    PaymentStatus @default(NO_PAGO)
+  concept   String        @default("Monthly Fee")
+  total     Decimal       @db.Decimal(10, 2)
+  totalPaid Decimal       @default(0) @db.Decimal(10, 2)
+  balance   Decimal       @default(0) @db.Decimal(10, 2) // Calculated: total - totalPaid
+  status    PaymentStatus @default(UNPAID)
 
-  paid    PaymentDetail[]
+  dueDate  DateTime?
+  paidDate DateTime?
+
+  details PaymentDetail[]
   receipt Receipt?
 
   createdAt DateTime @default(now())
@@ -192,6 +785,8 @@ model Payment {
   @@unique([studentId, cycleId, month, year])
   @@index([cycleId, year, month])
   @@index([studentId, year, month])
+  @@index([status, dueDate])
+  @@index([dueDate])
 }
 
 model PaymentDetail {
@@ -200,39 +795,34 @@ model PaymentDetail {
   paymentId String
   payment   Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
 
-  date        DateTime    @default(now())
-  amount      Float
-  paymentType PaymentType @default(CASH)
+  date          DateTime      @default(now())
+  amount        Decimal       @db.Decimal(10, 2)
+  paymentMethod PaymentMethod @default(CASH)
+  reference     String? // Transaction code, receipt number
+  notes         String?
+
+  dueDate DateTime? // Optional: deadline for this partial payment
 
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
   @@index([paymentId])
+  @@index([date])
 }
-
-/**
- * ------------------ RECEIPTS (BOLETAS) ------------------
- */
-/**
- * Aquí tienes correlativo sin Counter:
- * - correlativo Int autoincrement()
- * - receiptNo string opcional (formato final), o lo formas en backend al generar PDF
- */
 
 model Receipt {
   id String @id @default(uuid())
 
-  // correlativo global (seguro, sin duplicados)
+  // Sequential number (safe, no duplicates)
   correlativo Int @unique @default(autoincrement())
 
-  // si quieres guardarlo ya formateado: "REG-2026-000123"
+  // Formatted receipt number: "REG-2026-000123"
   receiptNo String? @unique
 
   studentId String
   student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   cycleId String
-  cycle   Ciclo  @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  cycle   AcademicCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
 
   paymentId String  @unique
   payment   Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
@@ -240,69 +830,721 @@ model Receipt {
   month Int
   year  Int
 
-  servicio  String @default("Mensualidad")
-  total     Float
-  totalPaid Float
+  concept   String  @default("Monthly Fee")
+  total     Decimal @db.Decimal(10, 2)
+  totalPaid Decimal @db.Decimal(10, 2)
 
-  // snapshot de abonos (opcional). Si prefieres normalizar, puedes omitirlo y leer PaymentDetail.
-  pagosJson Json?
+  // Payment snapshot (optional, for audit)
+  paymentsJson Json?
 
+  issuedBy String
+  issuer   User     @relation("ReceiptIssuerUser", fields: [issuedBy], references: [id], onDelete: Restrict)
   issuedAt DateTime @default(now())
 
+  status ReceiptStatus @default(ISSUED)
+
+  // PDF generation
+  pdfUrl  String?
+  printed Boolean @default(false)
+
   @@unique([studentId, cycleId, month, year])
+  @@index([correlativo])
   @@index([cycleId, year, month])
   @@index([studentId, year, month])
+  @@index([issuedAt])
 }
 
-enum AttendanceStatus {
-  PRESENTE
-  AUSENTE
-  TARDE
-  JUSTIFICADO
-}
+/**
+ * ============================================================
+ * MÓDULO 7: BIBLIOTECA (DECIMAL FIX)
+ * ============================================================
+ */
 
-model AttendanceSession {
-  id String @id @default(uuid())
+model LibraryBook {
+  id              String  @id @default(uuid())
+  isbn            String? @unique
+  title           String
+  author          String
+  publisher       String?
+  publicationYear Int?
+  edition         String?
+  category        String?
+  description     String?
 
-  actividadId String
-  actividad   Actividad @relation(fields: [actividadId], references: [id], onDelete: Cascade)
+  totalCopies     Int     @default(1)
+  availableCopies Int     @default(1) // ⚠️ Campo derivado - mantener con triggers/transacciones
+  location        String?
 
-  // Fecha de asistencia (solo día). Usa DateTime igual, pero tú normalizas a 00:00 en backend.
-  date DateTime
+  status BookStatus @default(ACTIVE)
 
-  note String?
-
-  records AttendanceRecord[]
+  borrowings LibraryBorrow[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // 1 sesión por actividad por día
-  @@unique([actividadId, date])
-  @@index([date])
-  @@index([actividadId])
+  @@index([isbn])
+  @@index([title])
+  @@index([author])
+  @@index([category])
+  @@index([status])
 }
 
-model AttendanceRecord {
+model LibraryBorrow {
   id String @id @default(uuid())
 
-  sessionId String
-  session   AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  bookId String
+  book   LibraryBook @relation(fields: [bookId], references: [id], onDelete: Cascade)
 
   studentId String
   student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
-  status AttendanceStatus @default(AUSENTE)
+  borrowDate DateTime  @default(now())
+  dueDate    DateTime
+  returnDate DateTime?
 
-  // opcional: nota por estudiante (ej. “llegó 10 min tarde”)
-  comment String?
+  status     BorrowStatus @default(ACTIVE)
+  fineAmount Decimal      @default(0) @db.Decimal(10, 2)
+  notes      String?
+
+  issuedBy String
+  issuer   User   @relation("LibraryBorrowIssuer", fields: [issuedBy], references: [id], onDelete: Restrict)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  markedAt DateTime @default(now())
 
-  // 1 registro por alumno por sesión
-  @@unique([sessionId, studentId])
+  @@index([bookId])
   @@index([studentId])
-  @@index([sessionId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([returnDate])
 }
+
+/**
+ * ============================================================
+ * MÓDULO 8: COMUNICACIÓN
+ * ============================================================
+ */
+
+model Message {
+  id String @id @default(uuid())
+
+  senderId String
+  sender   User   @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  recipientId String
+  recipient   User   @relation("MessageRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  subject     String?
+  body        String
+  messageType MessageType @default(DIRECT)
+
+  isRead Boolean   @default(false)
+  readAt DateTime?
+
+  status MessageStatus @default(SENT)
+
+  // For threading
+  parentId String?
+  parent   Message?  @relation("MessageThread", fields: [parentId], references: [id], onDelete: SetNull)
+  replies  Message[] @relation("MessageThread")
+
+  attachments Json? // Array of {name, url, type}
+
+  sentAt    DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@index([senderId])
+  @@index([recipientId])
+  @@index([isRead])
+  @@index([sentAt])
+  @@index([status])
+}
+
+model Announcement {
+  id String @id @default(uuid())
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  title    String
+  content  String
+  audience AnnouncementAudience @default(ALL)
+  priority AnnouncementPriority @default(MEDIUM)
+
+  attachments Json? // Array of {name, url, type}
+
+  publishedAt DateTime?
+  expiresAt   DateTime?
+  status      AnnouncementStatus @default(DRAFT)
+
+  views Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([audience])
+  @@index([priority])
+  @@index([status])
+  @@index([publishedAt])
+}
+
+/**
+ * ============================================================
+ * MÓDULO 9: MATERIALES DE CURSO
+ * ============================================================
+ */
+
+model CourseMaterial {
+  id String @id @default(uuid())
+
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String?
+  fileType    String // pdf, video, image, document, link
+  fileUrl     String?
+  fileSize    Int? // in bytes
+
+  // For external links
+  externalUrl String?
+
+  // Access control
+  isVisible     Boolean @default(true)
+  requiresLogin Boolean @default(true)
+
+  uploadedBy String
+  uploader   User   @relation("MaterialUploader", fields: [uploadedBy], references: [id], onDelete: Restrict)
+
+  downloadCount Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([courseId])
+  @@index([fileType])
+  @@index([isVisible])
+}
+
+/**
+ * ============================================================
+ * MÓDULO 10: AUDITORÍA Y LOGS
+ * ============================================================
+ */
+
+model LoginLog {
+  id String @id @default(uuid())
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  loginAt   DateTime  @default(now())
+  logoutAt  DateTime?
+  ip        String?
+  userAgent String?
+
+  status        LoginStatus
+  failureReason String?
+
+  sessionId String?
+
+  @@index([userId])
+  @@index([loginAt])
+  @@index([status])
+  @@index([ip])
+}
+
+model AuditLog {
+  id String @id @default(uuid())
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  action   AuditAction
+  entity   String // table/entity name
+  entityId String?
+
+  changes     Json? // { old: {...}, new: {...} }
+  description String?
+
+  ip        String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([entity])
+  @@index([createdAt])
+}
+
+/**
+ * ============================================================
+ * MÓDULO 11: CONTRATOS DE PROFESORES
+ * ============================================================
+ */
+
+enum ContractType {
+  FULL_TIME
+  PART_TIME
+  HOURLY
+  CONTRACTOR
+  TEMPORARY
+}
+
+enum ContractStatus {
+  ACTIVE
+  SUSPENDED
+  TERMINATED
+  EXPIRED
+  RENEWED
+}
+
+enum PaymentFrequency {
+  MONTHLY
+  BIWEEKLY
+  WEEKLY
+  HOURLY
+}
+
+model TeacherContract {
+  id String @id @default(uuid())
+
+  teacherId String
+  teacher   TeacherProfile @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  contractType   ContractType   @default(FULL_TIME)
+  contractNumber String         @unique // "CON-TEACH-2026-001"
+  startDate      DateTime
+  endDate        DateTime?
+  status         ContractStatus @default(ACTIVE)
+
+  // Términos económicos
+  baseSalary       Decimal          @db.Decimal(10, 2) // Salario base mensual
+  paymentFrequency PaymentFrequency @default(MONTHLY)
+  hourlyRate       Decimal?         @db.Decimal(8, 2) // Para contratos por hora
+
+  // ✅ Datos bancarios y documento (caso Perú) - con enums
+  documentType    DocumentType? // ✅ Enum en lugar de String
+  documentNumber  String? // Número de documento
+  bankName        String? // "BCP", "Interbank", "Scotiabank"
+  bankAccount     String? // Número de cuenta
+  bankAccountType BankAccountType? // ✅ Enum: CC, CA
+  cci             String? // Código CCI para transferencias
+
+  // Beneficios
+  hasHealthInsurance Boolean @default(false)
+  hasRetirementPlan  Boolean @default(false)
+  vacationDays       Int     @default(15)
+  sickDays           Int     @default(10)
+
+  // Detalles del contrato
+  position     String // "Math Teacher", "English Coordinator"
+  department   String?
+  workSchedule String? // "Monday-Friday 8:00-17:00"
+  contractFile String? // URL del PDF firmado
+
+  notes String?
+
+  signedAt   DateTime?
+  signedById String? // ✅ Relación explícita con User
+  signedBy   User?     @relation("TeacherContractSigner", fields: [signedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relaciones
+  payrolls          TeacherPayroll[]
+  attendanceClasses TeacherAttendanceClass[]
+  attendanceEvents  TeacherAttendanceEvent[]
+
+  @@index([teacherId])
+  @@index([contractNumber])
+  @@index([status])
+  @@index([startDate, endDate])
+  @@index([documentNumber])
+}
+
+/**
+ * ============================================================
+ * MÓDULO 12: NÓMINA DE PROFESORES
+ * ============================================================
+ */
+
+enum PayrollStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  PAID
+  CANCELLED
+}
+
+enum PayrollItemType {
+  BASE_SALARY
+  OVERTIME
+  BONUS
+  COMMISSION
+  ALLOWANCE
+  DEDUCTION
+  TAX
+  INSURANCE
+  RETIREMENT
+  ADVANCE
+  OTHER
+}
+
+/**
+ * TeacherPayroll: Nómina mensual/quincenal
+ * ✅ Solo un @@unique principal: [contractId, year, month]
+ * ✅ periodStart/periodEnd como índices (no unique) para flexibilidad
+ * ✅ Sin teacherId duplicado
+ * ✅ Vínculo con asistencia: hoursWorked y attendanceCount
+ */
+model TeacherPayroll {
+  id String @id @default(uuid())
+
+  contractId String
+  contract   TeacherContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  // ✅ Clave principal: año y mes (nómina mensual)
+  year  Int // 2026
+  month Int // 1-12
+
+  // Rango exacto del período (para contratos no mensuales o nóminas especiales)
+  periodStart DateTime
+  periodEnd   DateTime
+
+  payrollPeriod String // "January 2026", "Q1 2026" (calculado o manual)
+
+  // Montos calculados
+  grossSalary     Decimal @db.Decimal(10, 2) // Salario bruto
+  totalDeductions Decimal @default(0) @db.Decimal(10, 2)
+  totalBonuses    Decimal @default(0) @db.Decimal(10, 2)
+  netSalary       Decimal @db.Decimal(10, 2) // Salario neto
+
+  // ✅ Vínculo con asistencia (para contratos por hora/sesión)
+  hoursWorked     Decimal? @db.Decimal(6, 2) // Horas trabajadas en el período
+  attendanceCount Int? // Sesiones/clases asistidas
+
+  status PayrollStatus @default(DRAFT)
+
+  // Aprobación y pago
+  approvedAt   DateTime?
+  approvedById String? // ✅ Relación explícita
+  approvedBy   User?     @relation("PayrollApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+
+  paidAt   DateTime?
+  paidById String? // ✅ Relación explícita
+  paidBy   User?     @relation("PayrollPayer", fields: [paidById], references: [id], onDelete: SetNull)
+
+  // Detalles del pago
+  paymentMethod PaymentMethod @default(TRANSFER)
+  reference     String? // Número de transferencia, cheque, etc.
+  notes         String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relaciones
+  items   PayrollItem[]
+  receipt PayrollReceipt?
+
+  // ✅ Único constraint principal (nómina mensual)
+  @@unique([contractId, year, month])
+  // ✅ Índices para rango (no unique, permite nóminas especiales en mismo mes)
+  @@index([contractId, periodStart, periodEnd])
+  @@index([year, month])
+  @@index([status])
+  @@index([paidAt])
+}
+
+model PayrollItem {
+  id String @id @default(uuid())
+
+  payrollId String
+  payroll   TeacherPayroll @relation(fields: [payrollId], references: [id], onDelete: Cascade)
+
+  itemType    PayrollItemType
+  description String
+  amount      Decimal         @db.Decimal(10, 2)
+  isDeduction Boolean         @default(false) // true = resta, false = suma
+
+  createdAt DateTime @default(now())
+
+  @@index([payrollId])
+  @@index([itemType])
+}
+
+model PayrollReceipt {
+  id String @id @default(uuid())
+
+  payrollId String         @unique
+  payroll   TeacherPayroll @relation(fields: [payrollId], references: [id], onDelete: Cascade)
+
+  receiptNumber String @unique // "PAY-TEACH-2026-001"
+
+  // ✅ Sin teacherId redundante
+  // ✅ contractId opcional para reportes rápidos (sin joins largos)
+  contractId String // ✅ Opcional pero útil
+
+  periodStart DateTime
+  periodEnd   DateTime
+
+  grossSalary     Decimal @db.Decimal(10, 2)
+  totalDeductions Decimal @db.Decimal(10, 2)
+  totalBonuses    Decimal @db.Decimal(10, 2)
+  netSalary       Decimal @db.Decimal(10, 2)
+
+  issuedAt   DateTime @default(now())
+  issuedById String // ✅ Relación explícita
+  issuedBy   User     @relation("ReceiptIssuer", fields: [issuedById], references: [id], onDelete: Restrict)
+
+  pdfUrl  String? // URL del PDF generado
+  printed Boolean @default(false)
+
+  @@index([receiptNumber])
+  @@index([contractId]) // ✅ Índice para reportes rápidos
+  @@index([issuedAt])
+}
+
+/**
+ * ============================================================
+ * MÓDULO 13: ASISTENCIA DE PROFESORES
+ * ============================================================
+ */
+
+enum TeacherAttendanceType {
+  CLASS_SESSION // Asistencia a clase
+  MEETING // Reunión
+  TRAINING // Capacitación
+  EVENT // Evento escolar
+  OTHER // Otro
+}
+
+/**
+ * TeacherAttendanceClass: Asistencia a sesiones de clase
+ * ✅ sessionId obligatorio (no NULL)
+ * ✅ Unique seguro: [contractId, sessionId]
+ * ✅ SIN teacherId redundante (se obtiene vía contract.teacher)
+ * ✅ REGLA: Si prefieres mantener teacherId por performance, asegúrate de
+ * copiarlo SIEMPRE desde contract.teacherId en backend
+ */
+model TeacherAttendanceClass {
+  id String @id @default(uuid())
+
+  contractId String
+  contract   TeacherContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  // ✅ ELIMINADO: teacherId redundante
+  // Si lo necesitas por performance, descomenta y asegura copiar desde contract:
+  // teacherId       String
+  // teacher         TeacherProfile       @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  // ✅ sessionId obligatorio (no NULL)
+  sessionId String
+  session   ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  // Registro de asistencia
+  attendanceDate DateTime // Fecha del registro (puede ser != session.startsAt)
+  checkInTime    DateTime? // Hora de entrada
+  checkOutTime   DateTime? // Hora de salida
+  status         TeacherAttendanceStatus @default(PRESENT)
+
+  // Horas trabajadas (calculado o manual)
+  hoursWorked Decimal? @db.Decimal(4, 2)
+
+  // Justificación (si está ausente/tarde)
+  reason  String?
+  comment String?
+
+  // Quién registró
+  recordedById String?
+  recordedBy   User?    @relation("AttendanceRecorder", fields: [recordedById], references: [id], onDelete: SetNull)
+  recordedAt   DateTime @default(now())
+
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  teacherProfile   TeacherProfile? @relation(fields: [teacherProfileId], references: [id])
+  teacherProfileId String?
+
+  // ✅ Unique seguro (sin NULLs)
+  @@unique([contractId, sessionId])
+  @@index([contractId])
+  @@index([attendanceDate])
+  @@index([status])
+}
+
+model TeacherAttendanceEvent {
+  id String @id @default(uuid())
+
+  contractId String
+  contract   TeacherContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  // ✅ ELIMINADO: teacherId redundante
+  // Si lo necesitas por performance, descomenta y asegura copiar desde contract:
+  // teacherId       String
+  // teacher         TeacherProfile       @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  // ✅ Evento obligatorio (no NULL)
+  eventTitle String // "Staff Meeting", "Training Workshop"
+  eventDate  DateTime // Fecha del evento
+
+  attendanceType TeacherAttendanceType @default(MEETING)
+
+  // Registro de asistencia
+  checkInTime  DateTime? // Hora de entrada
+  checkOutTime DateTime? // Hora de salida
+  status       TeacherAttendanceStatus @default(PRESENT)
+
+  // Horas trabajadas (calculado o manual)
+  hoursWorked Decimal? @db.Decimal(4, 2)
+
+  // Justificación
+  reason  String?
+  comment String?
+
+  // Quién registró
+  recordedById String?
+  recordedBy   User?    @relation("EventAttendanceRecorder", fields: [recordedById], references: [id], onDelete: SetNull)
+  recordedAt   DateTime @default(now())
+
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  teacherProfile   TeacherProfile? @relation(fields: [teacherProfileId], references: [id])
+  teacherProfileId String?
+
+  // ✅ Unique seguro (sin NULLs)
+  @@unique([contractId, eventDate, eventTitle])
+  @@index([contractId])
+  @@index([eventDate])
+  @@index([status])
+}
+
+/**
+ * Enum específico para profesores (agrega ON_LEAVE)
+ */
+enum TeacherAttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+  JUSTIFIED
+  ON_LEAVE // ✅ Vacaciones, licencia médica, permiso
+}
+
+/**
+ * ============================================================
+ * MÓDULO 14: EVENTOS DE PROFESORES
+ * ============================================================
+ */
+
+enum TeacherEventType {
+  MEETING
+  TRAINING
+  WORKSHOP
+  CONFERENCE
+  EVALUATION
+  PLANNING
+  OTHER
+}
+
+enum TeacherEventStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  POSTPONED
+}
+
+/**
+ * TeacherEvent: Eventos programados (reuniones, capacitaciones, etc.)
+ * ✅ Usa startsAt y endsAt (DateTime completos)
+ */
+model TeacherEvent {
+  id String @id @default(uuid())
+
+  title          String
+  description    String?
+  eventType      TeacherEventType
+  eventTypeLabel String? // "Staff Meeting", "PD Workshop" (opcional)
+
+  // ✅ DateTime completos
+  startsAt DateTime
+  endsAt   DateTime
+
+  location    String?
+  organizerId String
+  organizer   User    @relation("TeacherEventOrganizer", fields: [organizerId], references: [id], onDelete: Restrict)
+
+  status TeacherEventStatus @default(SCHEDULED)
+
+  // Asistentes
+  attendees TeacherEventAttendee[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([eventType])
+  @@index([startsAt])
+  @@index([status])
+}
+
+model TeacherEventAttendee {
+  id String @id @default(uuid())
+
+  eventId String
+  event   TeacherEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  teacherId String
+  teacher   TeacherProfile @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  status  TeacherAttendanceStatus @default(PRESENT)
+  comment String?
+
+  attendedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@unique([eventId, teacherId])
+  @@index([eventId])
+  @@index([teacherId])
+  @@index([status])
+}
+
+/**
+ * ============================================================
+ * NOTAS IMPORTANTES DE IMPLEMENTACIÓN
+ * ============================================================
+ */
+
+/**
+ * ⚠️ CAMPOS DERIVADOS - REQUEREN DISCIPLINA:
+ * 1. ClassSection.currentEnrollment
+ * - Actualizar en transacción al crear/eliminar SectionEnrollment
+ * - O calcular en consulta: SELECT COUNT(*) FROM section_enrollments WHERE sectionId = ? AND status = 'ACTIVE'
+ * 2. LibraryBook.availableCopies
+ * - Actualizar en transacción al crear/eliminar LibraryBorrow
+ * - O calcular: totalCopies - COUNT(borrowings WHERE status = 'ACTIVE')
+ * 3. Payment.balance
+ * - Calcular: total - totalPaid
+ * - Actualizar en trigger o en aplicación al agregar PaymentDetail
+ * ✅ VALIDACIONES EN APLICACIÓN:
+ * 1. Perfiles de usuario (TeacherProfile, ParentProfile, StaffProfile)
+ * - Validar que un usuario no tenga múltiples perfiles del mismo tipo
+ * - Ej: Si tiene TeacherProfile, no permitir crear otro TeacherProfile
+ * 2. RBAC - Asignación de roles
+ * - Un usuario puede tener múltiples roles (ADMIN + TEACHER)
+ * - Validar permisos en cada endpoint según roles asignados
+ * 3. SectionEnrollment.capacity
+ * - Validar currentEnrollment < maxCapacity antes de inscribir
+ * - Usar transacción para evitar race conditions
+ * ✅ ÍNDICES ESTRATÉGICOS ADICIONALES (crear manualmente):
+ * -- Pagos vencidos
+ * CREATE INDEX idx_payments_overdue ON "Payment"("dueDate")
+ * WHERE "status" IN ('UNPAID', 'PARTIAL', 'OVERDUE');
+ * -- Asistencia por rango de fechas
+ * CREATE INDEX idx_attendance_date_range ON "AttendanceRecord"("sessionId")
+ * WHERE "createdAt" >= CURRENT_DATE - INTERVAL '30 days';
+ * -- Mensajes no leídos
+ * CREATE INDEX idx_messages_unread ON "Message"("recipientId")
+ * WHERE "isRead" = false;
+ */

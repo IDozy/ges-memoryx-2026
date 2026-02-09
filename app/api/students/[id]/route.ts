@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/src/lib/prisma";
+import { prisma } from "@/src/shared/db/prisma";
 
 function toDate(v: unknown) {
   if (!v) return null;
@@ -7,7 +7,7 @@ function toDate(v: unknown) {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-function normalizeGender(g: unknown): "M" | "F" | null | undefined {
+function normalizeGender(g: unknown): "M" | "F" | "OTHER" | null | undefined {
   if (g === undefined) return undefined; // no actualiza
   if (g === null || g === "") return null;
 
@@ -15,16 +15,40 @@ function normalizeGender(g: unknown): "M" | "F" | null | undefined {
 
   if (v === "M" || v === "MASCULINO" || v === "MALE") return "M";
   if (v === "F" || v === "FEMENINO" || v === "FEMALE") return "F";
+  if (v === "OTHER" || v === "OTRO") return "OTHER";
 
   // mejor 400 que 500
   throw new Error(`Valor inválido de gender: "${g}"`);
 }
 
-function normalizeStatus(s: unknown): "ACTIVO" | "RETIRADO" | undefined {
+function normalizeStatus(
+  s: unknown
+): "ACTIVE" | "WITHDRAWN" | "INACTIVE" | "SUSPENDED" | "GRADUATED" | undefined {
   if (s === undefined) return undefined;
   if (s === null || s === "") return undefined;
+
   const v = String(s).trim().toUpperCase();
-  return v === "RETIRADO" ? "RETIRADO" : "ACTIVO";
+
+  const map: Record<
+    string,
+    "ACTIVE" | "WITHDRAWN" | "INACTIVE" | "SUSPENDED" | "GRADUATED"
+  > = {
+    // viejos
+    ACTIVO: "ACTIVE",
+    RETIRADO: "WITHDRAWN",
+    INACTIVO: "INACTIVE",
+    SUSPENDIDO: "SUSPENDED",
+    GRADUADO: "GRADUATED",
+
+    // nuevos (por si ya te llega así)
+    ACTIVE: "ACTIVE",
+    WITHDRAWN: "WITHDRAWN",
+    INACTIVE: "INACTIVE",
+    SUSPENDED: "SUSPENDED",
+    GRADUATED: "GRADUATED",
+  };
+
+  return map[v] ?? "ACTIVE";
 }
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -67,12 +91,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
               : null
             : undefined,
 
-        tutor:
-          body.tutor !== undefined
-            ? body.tutor
-              ? String(body.tutor).trim()
-              : null
-            : undefined,
+        // ❌ tutor eliminado (ya no existe en Student)
 
         birthDate: body.birthDate !== undefined ? toDate(body.birthDate) : undefined,
 
@@ -106,19 +125,23 @@ export async function PATCH(req: Request, ctx: Ctx) {
               : null
             : undefined,
 
+        nationality:
+          body.nationality !== undefined
+            ? body.nationality
+              ? String(body.nationality).trim()
+              : null
+            : undefined,
+
         status: normalizeStatus(body.status),
       },
     });
 
     return NextResponse.json(updated);
   } catch (e: any) {
-    // normalizeGender lanza Error -> devolvemos 400
     const msg = String(e?.message ?? "Error actualizando");
-    const isGender = msg.toLowerCase().includes("gender");
-    return NextResponse.json(
-      { message: msg },
-      { status: isGender ? 400 : 500 }
-    );
+    const lower = msg.toLowerCase();
+    const isBadInput = lower.includes("gender") || lower.includes("status");
+    return NextResponse.json({ message: msg }, { status: isBadInput ? 400 : 500 });
   }
 }
 

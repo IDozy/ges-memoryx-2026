@@ -34,10 +34,11 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
         )}
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <Topbar onOpenMenu={() => setMobileOpen(true)} />
-
+          <div className="sticky top-0 z-30 border-b border-[var(--color-border)] bg-[var(--color-bg)]/80 backdrop-blur">
+            <Topbar onOpenMenu={() => setMobileOpen(true)} />
+          </div>
           <main className="flex-1 p-4 sm:p-6">
-            <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-muted)] p-4 shadow-sm sm:p-6">
+            <div className="rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm sm:p-6">
               {children}
             </div>
           </main>

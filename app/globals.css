@@ -3,12 +3,16 @@
 /* LIGHT (default) */
 @theme {
   /* page background */
-  --color-bg: #f6f7fb;           /* suave, no blanco puro */
-  --color-text: #0f172a;         /* slate-900 */
+  --color-bg: #f6f7fb;
+  /* suave, no blanco puro */
+  --color-text: #0f172a;
+  /* slate-900 */
 
   /* surfaces */
-  --color-surface: #ffffff;      /* cards/paneles */
-  --color-muted: #f1f5f9;        /* inputs/hover suave */
+  --color-surface: #ffffff;
+  /* cards/paneles */
+  --color-muted: #f1f5f9;
+  /* inputs/hover suave */
 
   /* borders */
   --color-border: rgba(15, 23, 42, 0.12);
@@ -20,14 +24,27 @@
   --color-text: #fafafa;
 
   --color-surface: rgba(255, 255, 255, 0.06);
-  
+
   --color-surface-solid: #18181b;
   --color-muted: rgba(255, 255, 255, 0.10);
 
   --color-border: rgba(255, 255, 255, 0.12);
 }
 
-html, body {
+html,
+body {
   background-color: var(--color-bg);
   color: var(--color-text);
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none !important;
+  /* IE/Edge */
+  scrollbar-width: none !important;
+  /* Firefox y Chrome moderno */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none !important;
+  /* Safari y Chrome antiguo */
 }

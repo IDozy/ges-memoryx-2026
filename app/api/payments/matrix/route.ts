@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/src/lib/prisma";
+import { prisma } from "@/src/shared/db/prisma";
 
 function month1toIndex(m: number) {
   return m - 1; // BD 1..12  => UI 0..11

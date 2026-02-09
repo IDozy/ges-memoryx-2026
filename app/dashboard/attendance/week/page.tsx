@@ -1,6 +1,6 @@
 // app/dashboard/attendance/week/page.tsx
 import AttendanceWeekClient from "@/src/components/attendance/AttendanceWeekClient";
-import { prisma } from "@/src/lib/prisma";
+import { prisma } from "@/src/shared/db/prisma";
 
 export default async function AttendanceWeekPage() {
   const ciclos = await prisma.ciclo.findMany({

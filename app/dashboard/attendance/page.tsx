@@ -1,6 +1,6 @@
 // app/dashboard/attendance/page.tsx
 import AttendanceClient from "@/src/components/attendance/AttendanceClient";
-import { prisma } from "@/src/lib/prisma";
+import { prisma } from "@/src/shared/db/prisma";
 
 
 export default async function AttendancePage() {

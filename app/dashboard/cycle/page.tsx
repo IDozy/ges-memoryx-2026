@@ -7,7 +7,7 @@ import { toast } from "sonner";
 
 type Ciclo = {
   id: string;
-  nombre: string;
+  name: string;
   createdAt: string;
 };
 
@@ -29,7 +29,7 @@ export default function CiclosPage() {
   async function load() {
     setLoading(true);
     try {
-      const res = await fetch(`/api/cycles?q=${encodeURIComponent(q)}`);
+      const res = await fetch(`/api/academic-cycles?q=${encodeURIComponent(q)}`);
       const json = await res.json();
       setItems(json.items ?? []);
     } catch {
@@ -62,7 +62,7 @@ export default function CiclosPage() {
   function openEdit(c: Ciclo) {
     setFormMode("edit");
     setEditing(c);
-    setNombre(c.nombre);
+    setNombre(c.name);
     setOpenForm(true);
   }
 
@@ -80,7 +80,7 @@ export default function CiclosPage() {
 
     try {
       if (formMode === "create") {
-        const res = await fetch("/api/cycles", {
+        const res = await fetch("/api/academic-cycles", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ nombre: v }),
@@ -93,7 +93,7 @@ export default function CiclosPage() {
 
         toast.success("Ciclo creado");
       } else {
-        const res = await fetch(`/api/cycles/${editing!.id}`, {
+        const res = await fetch(`/api/academic-cycles/${editing!.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ nombre: v }),
@@ -120,7 +120,7 @@ export default function CiclosPage() {
     if (!deleting) return;
 
     try {
-      const res = await fetch(`/api/cycles/${deleting.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/academic-cycles/${deleting.id}`, { method: "DELETE" });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.message ?? "No se pudo eliminar");
@@ -171,7 +171,7 @@ export default function CiclosPage() {
               className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm"
             >
               <div className="p-5">
-                <div className="text-lg font-semibold">{c.nombre}</div>
+                <div className="text-lg font-semibold">{c.name}</div>
 
                 <div className="mt-4 flex items-center gap-3 text-xs">
                   <Link
@@ -290,7 +290,7 @@ export default function CiclosPage() {
             </div>
 
             <div className="p-4 text-sm">
-              ¿Seguro que deseas eliminar <span className="font-semibold">{deleting.nombre}</span>?
+              ¿Seguro que deseas eliminar <span className="font-semibold">{deleting.name}</span>?
               <div className="mt-2 text-xs opacity-70">
                 Si este ciclo tiene pagos/boletas asociados, el sistema podría bloquear la eliminación.
               </div>

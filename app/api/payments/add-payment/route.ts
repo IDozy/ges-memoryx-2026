@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/src/lib/prisma";
+import { prisma } from "@/src/shared/db/prisma";
 
 const VALID_TYPES = new Set(["CASH", "YAPE", "PLIN", "TRANSFER"]);
 

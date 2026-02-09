@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/src/lib/prisma";
+import { prisma } from "@/src/shared/db/prisma";
 
 function normalizeDay(iso: string) {
   const d = new Date(`${iso}T00:00:00.000Z`);

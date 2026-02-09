@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/src/lib/prisma";
+import { prisma } from "@/src/shared/db/prisma";
 
-
+export const runtime = "nodejs";
 
 function toDate(v: unknown) {
   if (!v) return null;
@@ -9,17 +9,47 @@ function toDate(v: unknown) {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
+function normalizeStudentStatus(v: unknown) {
+  const s = String(v ?? "").trim().toUpperCase();
+  const map: Record<string, "ACTIVE" | "INACTIVE" | "GRADUATED" | "SUSPENDED" | "WITHDRAWN"> = {
+    ACTIVO: "ACTIVE",
+    ACTIVE: "ACTIVE",
+    INACTIVO: "INACTIVE",
+    INACTIVE: "INACTIVE",
+    GRADUADO: "GRADUATED",
+    GRADUATED: "GRADUATED",
+    SUSPENDIDO: "SUSPENDED",
+    SUSPENDED: "SUSPENDED",
+    RETIRADO: "WITHDRAWN",
+    WITHDRAWN: "WITHDRAWN",
+  };
+  return map[s] ?? "ACTIVE";
+}
+
+async function generateStudentCode() {
+  const year = new Date().getFullYear();
+  // correlativo simple por año (suficiente para tu caso actual)
+  const start = new Date(year, 0, 1);
+  const end = new Date(year + 1, 0, 1);
+
+  const count = await prisma.student.count({
+    where: { createdAt: { gte: start, lt: end } },
+  });
+
+  return `STU-${year}-${String(count + 1).padStart(4, "0")}`;
+}
+
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const q = (searchParams.get("q") ?? "").trim();
-  const status = (searchParams.get("status") ?? "").trim(); // ACTIVO | RETIRADO | ""
+  const status = (searchParams.get("status") ?? "").trim(); // puede venir ACTIVO/RETIRADO o ACTIVE/WITHDRAWN
   const page = Math.max(1, Number(searchParams.get("page") ?? "1"));
   const pageSize = Math.min(500, Math.max(5, Number(searchParams.get("pageSize") ?? "10")));
   const skip = (page - 1) * pageSize;
 
   const where: any = {};
 
-  if (status) where.status = status;
+  if (status) where.status = normalizeStudentStatus(status);
 
   if (q) {
     where.OR = [
@@ -27,7 +57,6 @@ export async function GET(req: Request) {
       { lastNameFather: { contains: q, mode: "insensitive" } },
       { lastNameMother: { contains: q, mode: "insensitive" } },
       { phone: { contains: q, mode: "insensitive" } },
-      { tutor: { contains: q, mode: "insensitive" } },
     ];
   }
 
@@ -53,47 +82,60 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const body = await req.json();
+  try {
+    const body = await req.json();
 
-  // validación mínima
-  const firstName = String(body.firstName ?? "").trim();
-  const lastNameFather = String(body.lastNameFather ?? "").trim();
-  const lastNameMother = String(body.lastNameMother ?? "").trim();
+    const firstName = String(body.firstName ?? "").trim();
+    const lastNameFather = String(body.lastNameFather ?? "").trim();
+    const lastNameMother = String(body.lastNameMother ?? "").trim();
 
-  if (!firstName || !lastNameFather || !lastNameMother) {
+    if (!firstName || !lastNameFather || !lastNameMother) {
+      return NextResponse.json(
+        { message: "firstName, lastNameFather y lastNameMother son obligatorios" },
+        { status: 400 }
+      );
+    }
+
+    const genderMap: Record<string, "M" | "F" | "OTHER"> = {
+      MASCULINO: "M",
+      FEMENINO: "F",
+      OTRO: "OTHER",
+      M: "M",
+      F: "F",
+      OTHER: "OTHER",
+    };
+    const genderNormalized = body.gender
+      ? genderMap[String(body.gender).toUpperCase()]
+      : undefined;
+
+    const statusNormalized = normalizeStudentStatus(body.status);
+
+    const studentCode = await generateStudentCode();
+
+    const created = await prisma.student.create({
+      data: {
+        studentCode,
+        firstName,
+        lastNameFather,
+        lastNameMother,
+        phone: body.phone ? String(body.phone).trim() : null,
+        birthDate: toDate(body.birthDate),
+        gender: genderNormalized,
+        grade: body.grade ? String(body.grade).trim() : null,
+        school: body.school ? String(body.school).trim() : null,
+        address: body.address ? String(body.address).trim() : null,
+        pickupPerson: body.pickupPerson ? String(body.pickupPerson).trim() : null,
+        status: statusNormalized,
+        nationality: body.nationality ? String(body.nationality).trim() : null,
+      },
+    });
+
+    return NextResponse.json(created, { status: 201 });
+  } catch (e: any) {
+    console.error("[API_STUDENTS_POST]", e);
     return NextResponse.json(
-      { message: "firstName, lastNameFather y lastNameMother son obligatorios" },
-      { status: 400 }
+      { message: e?.message, code: e?.code, meta: e?.meta },
+      { status: 500 }
     );
   }
-
-
-  const genderMap: Record<string, "M" | "F"> = {
-    MASCULINO: "M",
-    FEMENINO: "F",
-    M: "M",
-    F: "F",
-  };
-
-
-  const genderNormalized = body.gender ? genderMap[String(body.gender).toUpperCase()] : undefined;
-
-  const created = await prisma.student.create({
-    data: {
-      firstName,
-      lastNameFather,
-      lastNameMother,
-      phone: body.phone ? String(body.phone).trim() : null,
-      tutor: body.tutor ? String(body.tutor).trim() : null,
-      birthDate: toDate(body.birthDate),
-      gender: genderNormalized, // "M" | "F" si usas enum
-      grade: body.grade ? String(body.grade).trim() : null,
-      school: body.school ? String(body.school).trim() : null,
-      address: body.address ? String(body.address).trim() : null,
-      pickupPerson: body.pickupPerson ? String(body.pickupPerson).trim() : null,
-      status: body.status ?? "ACTIVO",
-    },
-  });
-
-  return NextResponse.json(created, { status: 201 });
 }

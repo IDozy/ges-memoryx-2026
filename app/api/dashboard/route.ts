@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/src/lib/prisma";
+import { prisma } from "@/src/shared/db/prisma";
+
+export const runtime = "nodejs";
 
 function monthRange(d = new Date()) {
   const start = new Date(d.getFullYear(), d.getMonth(), 1);
@@ -26,22 +28,22 @@ export async function GET() {
       activos,
       retirados,
       totalTalleres,
-      totalNiveles,
+      totalRegulares,
       pagosPendientesMes,
       ingresosMesAgg,
     ] = await Promise.all([
       prisma.student.count(),
-      prisma.student.count({ where: { status: "ACTIVO" } }),
-      prisma.student.count({ where: { status: "RETIRADO" } }),
+      prisma.student.count({ where: { status: "ACTIVE" } }),
+      prisma.student.count({ where: { status: "WITHDRAWN" } }),
 
-      prisma.actividad.count({ where: { tipo: "TALLER" } }),
-      prisma.actividad.count({ where: { tipo: "NIVEL" } }),
+      prisma.course.count({ where: { courseType: "WORKSHOP" } }),
+      prisma.course.count({ where: { courseType: "REGULAR" } }),
 
       prisma.payment.count({
         where: {
           month,
           year,
-          status: { in: ["NO_PAGO", "PENDIENTE"] },
+          status: { in: ["UNPAID", "PENDING", "PARTIAL", "OVERDUE"] },
         },
       }),
 
@@ -53,9 +55,10 @@ export async function GET() {
       }),
     ]);
 
-    const ingresosMes = ingresosMesAgg._sum.amount ?? 0;
+    const ingresosMes = Number(ingresosMesAgg._sum.amount ?? 0);
 
     // ========= Actividad reciente =========
+
     // 1) Estudiantes recientes
     const recentStudents = await prisma.student.findMany({
       take: 5,
@@ -82,7 +85,7 @@ export async function GET() {
             student: {
               select: { firstName: true, lastNameFather: true, lastNameMother: true },
             },
-            cycle: { select: { nombre: true } },
+            cycle: { select: { name: true } }, // ✅ antes "nombre"
             month: true,
             year: true,
           },
@@ -104,15 +107,19 @@ export async function GET() {
       },
     });
 
-    // 4) Inscripciones recientes (StudentActividad)
-    const recentEnrolls = await prisma.studentActividad.findMany({
+    // 4) Inscripciones recientes (antes StudentActividad → ahora SectionEnrollment)
+    const recentEnrolls = await prisma.sectionEnrollment.findMany({
       take: 5,
-      orderBy: { createdAt: "desc" },
+      orderBy: { enrolledAt: "desc" },
       select: {
         id: true,
-        createdAt: true,
+        enrolledAt: true,
         student: { select: { firstName: true, lastNameFather: true, lastNameMother: true } },
-        actividad: { select: { nombre: true, tipo: true } },
+        section: {
+          select: {
+            course: { select: { name: true, courseType: true } },
+          },
+        },
       },
     });
 
@@ -130,8 +137,8 @@ export async function GET() {
         return {
           id: p.id,
           type: "PAYMENT" as const,
-          title: `Abono: S/ ${p.amount.toFixed(2)} — ${st.lastNameFather} ${st.lastNameMother} ${st.firstName}`.trim(),
-          subtitle: `${p.payment.cycle.nombre} • ${p.payment.month}/${p.payment.year}`,
+          title: `Abono: S/ ${Number(p.amount).toFixed(2)} — ${st.lastNameFather} ${st.lastNameMother} ${st.firstName}`.trim(),
+          subtitle: `${p.payment.cycle.name} • ${p.payment.month}/${p.payment.year}`,
           at: p.date.toISOString(),
         };
       }),
@@ -142,7 +149,7 @@ export async function GET() {
         return {
           id: r.id,
           type: "RECEIPT" as const,
-          title: `Boleta emitida ${code} — S/ ${r.totalPaid.toFixed(2)}`,
+          title: `Boleta emitida ${code} — S/ ${Number(r.totalPaid).toFixed(2)}`,
           subtitle: `${st.lastNameFather} ${st.lastNameMother} ${st.firstName}`.trim(),
           at: r.issuedAt.toISOString(),
         };
@@ -150,12 +157,17 @@ export async function GET() {
 
       ...recentEnrolls.map((e) => {
         const st = e.student;
+        const course = e.section.course;
+        const tipo =
+          course.courseType === "WORKSHOP" ? "TALLER" :
+          course.courseType === "REGULAR" ? "CURSO" :
+          course.courseType;
         return {
           id: e.id,
           type: "ENROLL" as const,
           title: `Inscripción: ${st.lastNameFather} ${st.lastNameMother} ${st.firstName}`.trim(),
-          subtitle: `${e.actividad.tipo}: ${e.actividad.nombre}`,
-          at: e.createdAt.toISOString(),
+          subtitle: `${tipo}: ${course.name}`,
+          at: e.enrolledAt.toISOString(),
         };
       }),
     ]
@@ -165,7 +177,7 @@ export async function GET() {
     return NextResponse.json({
       kpis: {
         students: { total: totalStudents, activos, retirados },
-        actividades: { talleres: totalTalleres, niveles: totalNiveles },
+        actividades: { talleres: totalTalleres, niveles: totalRegulares }, // "niveles" ahora = REGULAR
         pagos: { pendientesMes: pagosPendientesMes, ingresosMes },
         mesActual: { month, year },
       },
@@ -173,6 +185,9 @@ export async function GET() {
     });
   } catch (e) {
     console.error("[API_DASHBOARD_GET]", e);
-    return NextResponse.json({ message: "Error cargando dashboard" }, { status: 500 });
+    return NextResponse.json(
+      { message: "Error cargando dashboard" },
+      { status: 500 }
+    );
   }
 }
