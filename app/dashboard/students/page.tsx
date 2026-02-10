@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import StudentsTable from "@/src/components/students/StudentsTable";
-import type { Student , Genero, Estado } from "@/src/components/students/types";
+import type { Student, Genero, Estado, CreateStudentPayload } from "@/src/components/students/types";
 import StudentsModal, {
   emptyDraft,
   type StudentDraft,
@@ -56,20 +56,32 @@ function apiToUi(s: ApiStudent): Student {
   };
 }
 
-function uiToApi(d: StudentDraft) {
-  return {
-    firstName: d.nombre?.trim(),
-    lastNameFather: d.apellidoPaterno?.trim(),
-    lastNameMother: d.apellidoMaterno?.trim(),
+function uiToApi(d: StudentDraft, mode: "create" | "edit"): CreateStudentPayload {
+  const base = {
+    firstName: d.nombre?.trim() || "",
+    lastNameFather: d.apellidoPaterno?.trim() || "",
+    lastNameMother: d.apellidoMaterno?.trim() || "",
     phone: d.telefono?.trim() || null,
     tutor: d.encargado?.trim() || null,
     birthDate: d.fechaNacimiento ? new Date(d.fechaNacimiento).toISOString() : null,
-    gender: d.genero ? String(d.genero).toUpperCase() : null, // ajusta si quieres "M"/"F"
+    gender: d.genero ? String(d.genero).toUpperCase() : null,
     grade: d.grado?.trim() || null,
     school: d.escuela?.trim() || null,
-    status: d.estado?.toUpperCase() === "RETIRADO" ? "RETIRADO" : "ACTIVO",
+    status: d.estado === "retirado" ? "RETIRADO" : "ACTIVO",
+  };
+
+  if (mode !== "create") return base;
+
+  return {
+    ...base,
+    parent: {
+      firstName: (d.parentFirstName ?? "").trim(),
+      lastName: (d.parentLastName ?? "").trim(),
+      relationship: (d.parentRelationship ?? "guardian").trim(),
+    },
   };
 }
+
 
 // pequeño debounce sin libs
 function useDebouncedValue<T>(value: T, delay = 300) {
@@ -185,7 +197,7 @@ export default function EstudiantesPage() {
   }
 
   async function createStudent(draft: StudentDraft) {
-    const payload = uiToApi(draft);
+    const payload = uiToApi(draft, "create");
 
     const res = await fetch("/api/students", {
       method: "POST",
@@ -201,8 +213,9 @@ export default function EstudiantesPage() {
     return (await res.json()) as ApiStudent;
   }
 
+
   async function updateStudent(id: string, draft: StudentDraft) {
-    const payload = uiToApi(draft);
+    const payload = uiToApi(draft, "edit");
 
     const res = await fetch(`/api/students/${id}`, {
       method: "PATCH",
@@ -217,6 +230,7 @@ export default function EstudiantesPage() {
 
     return (await res.json()) as ApiStudent;
   }
+
 
   async function onSubmit(draft: StudentDraft) {
     const tId =
@@ -262,8 +276,8 @@ export default function EstudiantesPage() {
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Estudiantes</h1>
-        </div>
-        
+      </div>
+
       <StudentsTable
         data={data}
         onCreate={onCreate}
@@ -278,9 +292,9 @@ export default function EstudiantesPage() {
         onClose={() => setOpen(false)}
         onSubmit={onSubmit}
       />
-      
+
     </div>
-    
+
   );
-  
+
 }

@@ -3,7 +3,11 @@
 import type { Student, Estado, Genero } from "./types";
 import { useEffect, useState } from "react";
 
-export type StudentDraft = Omit<Student, "id">;
+export type StudentDraft = Omit<Student, "id"> & {
+  parentFirstName?: string;
+  parentLastName?: string;
+  parentRelationship?: string; // father | mother | guardian | tutor
+};
 
 export const emptyDraft: StudentDraft = {
   nombre: "",
@@ -16,6 +20,10 @@ export const emptyDraft: StudentDraft = {
   grado: "",
   escuela: "",
   estado: "activo",
+
+  parentFirstName: "",
+  parentLastName: "",
+  parentRelationship: "guardian",
 };
 
 export default function StudentsModal({
@@ -35,7 +43,7 @@ export default function StudentsModal({
 
   useEffect(() => {
     if (!open) return;
-    setDraft(initial ?? emptyDraft);
+    setDraft({ ...emptyDraft, ...(initial ?? {}) });
   }, [open, initial]);
 
   if (!open) return null;
@@ -48,11 +56,25 @@ export default function StudentsModal({
       alert("Completa al menos: Nombre y Apellido paterno.");
       return;
     }
+
+    // ✅ si en CREATE vas a crear cuenta del apoderado, pide lo mínimo
+    if (mode === "create") {
+      const pf = (draft.parentFirstName ?? "").trim();
+      const pl = (draft.parentLastName ?? "").trim();
+      if (!pf || !pl) {
+        alert("Completa al menos: Nombres y Apellidos del apoderado/padre.");
+        return;
+      }
+    }
+
     onSubmit(draft);
   }
 
   const inputCls =
     "w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/10";
+
+  const sectionTitleCls = "text-sm font-semibold";
+  const sectionHintCls = "text-xs opacity-70";
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
@@ -73,8 +95,15 @@ export default function StudentsModal({
           </button>
         </div>
 
-        <div className="p-4">
-          <div className="grid gap-3 sm:grid-cols-2">
+        {/* ✅ Scroll + altura controlada */}
+        <div className="p-4 space-y-6 max-h-[70dvh] overflow-y-auto">
+          {/* ===================== DATOS ESTUDIANTE ===================== */}
+          <div className="space-y-1">
+            <div className={sectionTitleCls}>Datos del estudiante</div>
+          </div>
+
+          {/* ✅ 3 columnas en pantallas grandes */}
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <Field label="Nombre">
               <input
                 className={inputCls}
@@ -87,7 +116,9 @@ export default function StudentsModal({
               <input
                 className={inputCls}
                 value={draft.telefono}
-                onChange={(e) => setDraft({ ...draft, telefono: e.target.value })}
+                onChange={(e) =>
+                  setDraft({ ...draft, telefono: e.target.value })
+                }
               />
             </Field>
 
@@ -111,7 +142,7 @@ export default function StudentsModal({
               />
             </Field>
 
-            <Field label="Encargado">
+            <Field label="Encargado (texto)">
               <input
                 className={inputCls}
                 value={draft.encargado}
@@ -171,10 +202,61 @@ export default function StudentsModal({
               <input
                 className={inputCls}
                 value={draft.escuela}
-                onChange={(e) => setDraft({ ...draft, escuela: e.target.value })}
+                onChange={(e) =>
+                  setDraft({ ...draft, escuela: e.target.value })
+                }
               />
             </Field>
           </div>
+
+          {/* ===================== APODERADO (SOLO CREATE) ===================== */}
+          {mode === "create" && (
+            <>
+              <div className="border-t border-[var(--color-border)] pt-4 space-y-2">
+                <div className={sectionTitleCls}>Datos del apoderado / padre</div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <Field label="Nombres">
+                  <input
+                    className={inputCls}
+                    value={draft.parentFirstName ?? ""}
+                    onChange={(e) =>
+                      setDraft({ ...draft, parentFirstName: e.target.value })
+                    }
+                  />
+                </Field>
+
+                <Field label="Apellidos">
+                  <input
+                    className={inputCls}
+                    value={draft.parentLastName ?? ""}
+                    onChange={(e) =>
+                      setDraft({ ...draft, parentLastName: e.target.value })
+                    }
+                  />
+                </Field>
+
+                <Field label="Relación">
+                  <select
+                    className={inputCls}
+                    value={draft.parentRelationship ?? "guardian"}
+                    onChange={(e) =>
+                      setDraft({
+                        ...draft,
+                        parentRelationship: e.target.value,
+                      })
+                    }
+                  >
+                    <option value="father">Padre</option>
+                    <option value="mother">Madre</option>
+                    <option value="guardian">Apoderado</option>
+                    <option value="tutor">Tutor</option>
+                  </select>
+                </Field>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="flex justify-end gap-2 border-t border-[var(--color-border)] p-4">
@@ -196,7 +278,13 @@ export default function StudentsModal({
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <label className="space-y-1">
       <div className="text-xs font-medium opacity-80">{label}</div>

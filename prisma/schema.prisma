@@ -28,6 +28,7 @@ enum UserRoleType {
   PARENT
   STAFF
   ACCOUNTANT
+  STUDENT
 }
 
 // ==================== ESTRUCTURA ACADÉMICA ====================
@@ -270,6 +271,7 @@ model User {
   teacherProfile TeacherProfile?
   parentProfile  ParentProfile?
   staffProfile   StaffProfile?
+  studentProfile StudentProfile?
 
   // ✅ existentes
   createdAssessments Assessment[]   @relation("AssessmentCreator")
@@ -393,6 +395,21 @@ model StaffProfile {
   updatedAt DateTime @updatedAt
 
   @@index([employeeCode])
+}
+
+model StudentProfile {
+  id String @id @default(uuid())
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  studentId String  @unique
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([studentId])
 }
 
 model ParentStudentRelation {
@@ -588,6 +605,7 @@ model Student {
   grades             StudentGrade[]
   borrowings         LibraryBorrow[]
   parentRelations    ParentStudentRelation[]
+  profile            StudentProfile?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
