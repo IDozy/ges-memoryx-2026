@@ -37,7 +37,7 @@ function mapGenero(g: string | null): Genero {
 
 function mapEstado(s: string | null | undefined): Estado {
   const v = (s ?? "").toUpperCase();
-  return v === "RETIRADO" ? "retirado" : "activo";
+  return v === "WITHDRAWN" ? "retirado" : "activo";
 }
 
 function apiToUi(s: ApiStudent): Student {
@@ -56,6 +56,8 @@ function apiToUi(s: ApiStudent): Student {
   };
 }
 
+type Relationship = "father" | "mother" | "guardian" | "tutor";
+
 function uiToApi(d: StudentDraft, mode: "create" | "edit"): CreateStudentPayload {
   const base = {
     firstName: d.nombre?.trim() || "",
@@ -72,12 +74,14 @@ function uiToApi(d: StudentDraft, mode: "create" | "edit"): CreateStudentPayload
 
   if (mode !== "create") return base;
 
+  const relationship = (d.parentRelationship ?? "guardian") as Relationship;
+
   return {
     ...base,
     parent: {
       firstName: (d.parentFirstName ?? "").trim(),
       lastName: (d.parentLastName ?? "").trim(),
-      relationship: (d.parentRelationship ?? "guardian").trim(),
+      relationship,
     },
   };
 }

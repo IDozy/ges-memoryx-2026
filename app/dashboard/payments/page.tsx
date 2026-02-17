@@ -3,14 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import type { AbonarTarget, Estudiante, RegistrarTarget, PagoItem } from "@/src/components/payments/types";
-import { MESES, DEFAULT_TOTAL_MES } from "@/src/components/payments/constants";
-import { buildMes, estadoMes, sumPagos } from "@/src/components/payments/utils";
+import type { AbonarTarget, Estudiante, RegistrarTarget, PagoItem } from "@/src/components/payments-actualizar-eliminar/types";
+import { MESES, DEFAULT_TOTAL_MES } from "@/src/components/payments-actualizar-eliminar/constants";
+import { buildMes, estadoMes, sumPagos } from "@/src/components/payments-actualizar-eliminar/utils";
 
-import { PagoCell } from "@/src/components/payments/paymentCell";
-import { RegistrarMesModal } from "@/src/components/payments/RegisterModalMonth";
-import { AbonarModal } from "@/src/components/payments/PayModal";
-import { BoletaModal } from "@/src/components/payments/TicketModal";
+import { PagoCell } from "@/src/components/payments-actualizar-eliminar/paymentCell";
+import { RegistrarMesModal } from "@/src/components/payments-actualizar-eliminar/RegisterModalMonth";
+import { AbonarModal } from "@/src/components/payments-actualizar-eliminar/PayModal";
+import { BoletaModal } from "@/src/components/payments-actualizar-eliminar/TicketModal";
 
 type CycleItem = { id: string; nombre: string; createdAt: string };
 

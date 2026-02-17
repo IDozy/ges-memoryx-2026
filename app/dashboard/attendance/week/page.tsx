@@ -1,5 +1,5 @@
 // app/dashboard/attendance/week/page.tsx
-import AttendanceWeekClient from "@/src/components/attendance/AttendanceWeekClient";
+import AttendanceWeekClient from "@/src/components/attendance-eliminar-actualizar/AttendanceWeekClient";
 import { prisma } from "@/src/shared/db/prisma";
 
 export default async function AttendanceWeekPage() {

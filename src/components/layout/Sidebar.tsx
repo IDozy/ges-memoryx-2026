@@ -51,7 +51,7 @@ const navTree: NavNode[] = [
     label: "Usuarios",
     icon: UsersIcon,
     items: [
-      { href: "/dashboard/students", label: "Estudiantes", icon: UsersIcon },
+      { href: "/dashboard/users/students", label: "Estudiantes", icon: UsersIcon },
       { href: "/dashboard/users/teachers", label: "Profesores", icon: TeacherIcon },
       { href: "/dashboard/users/parents", label: "Padres/Tutores", icon: ParentIcon },
       { href: "/dashboard/users/staff", label: "Administrativos", icon: StaffIcon },

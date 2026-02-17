@@ -583,7 +583,6 @@ model Student {
   lastNameMother String
   birthDate      DateTime?
   gender         Gender?
-  nationality    String?
 
   // Datos académicos
   grade  String?

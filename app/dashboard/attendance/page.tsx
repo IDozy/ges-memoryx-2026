@@ -1,5 +1,5 @@
 // app/dashboard/attendance/page.tsx
-import AttendanceClient from "@/src/components/attendance/AttendanceClient";
+import AttendanceClient from "@/src/components/attendance-eliminar-actualizar/AttendanceClient";
 import { prisma } from "@/src/shared/db/prisma";
 
 

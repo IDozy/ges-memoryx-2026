@@ -7,11 +7,13 @@ import { normalizeGender, normalizeStudentStatus, safeDate } from "../domain/stu
 export class CreateStudentUseCase {
   constructor(private readonly repo: StudentRepository) {}
 
+  
   async execute(input: unknown) {
     assertCreateStudentDTO(input);
     const dto = input as CreateStudentDTO;
 
-    // invariantes del dominio (mínimo y útil)
+    const now = new Date();
+   
     StudentEntity.create({
       firstName: dto.firstName,
       lastNameFather: dto.lastNameFather,
@@ -26,4 +28,5 @@ export class CreateStudentUseCase {
 
     return this.repo.createWithAccounts(dto);
   }
+  
 }

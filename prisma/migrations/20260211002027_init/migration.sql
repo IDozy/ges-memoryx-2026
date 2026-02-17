@@ -1,36 +1,14 @@
-/*
-  Warnings:
-
-  - The values [PRESENTE,AUSENTE,TARDE,JUSTIFICADO] on the enum `AttendanceStatus` will be removed. If these variants are still used in the database, this will fail.
-  - The values [NO_PAGO,PENDIENTE,PAGADO,NO_REGISTRADO] on the enum `PaymentStatus` will be removed. If these variants are still used in the database, this will fail.
-  - The values [ACTIVO,RETIRADO] on the enum `StudentStatus` will be removed. If these variants are still used in the database, this will fail.
-  - You are about to alter the column `total` on the `Payment` table. The data in that column could be lost. The data in that column will be cast from `DoublePrecision` to `Decimal(10,2)`.
-  - You are about to alter the column `totalPaid` on the `Payment` table. The data in that column could be lost. The data in that column will be cast from `DoublePrecision` to `Decimal(10,2)`.
-  - You are about to drop the column `paymentType` on the `PaymentDetail` table. All the data in the column will be lost.
-  - You are about to drop the column `updatedAt` on the `PaymentDetail` table. All the data in the column will be lost.
-  - You are about to alter the column `amount` on the `PaymentDetail` table. The data in that column could be lost. The data in that column will be cast from `DoublePrecision` to `Decimal(10,2)`.
-  - You are about to drop the column `pagosJson` on the `Receipt` table. All the data in the column will be lost.
-  - You are about to drop the column `servicio` on the `Receipt` table. All the data in the column will be lost.
-  - You are about to alter the column `total` on the `Receipt` table. The data in that column could be lost. The data in that column will be cast from `DoublePrecision` to `Decimal(10,2)`.
-  - You are about to alter the column `totalPaid` on the `Receipt` table. The data in that column could be lost. The data in that column will be cast from `DoublePrecision` to `Decimal(10,2)`.
-  - You are about to drop the column `tutor` on the `Student` table. All the data in the column will be lost.
-  - You are about to drop the column `name` on the `User` table. All the data in the column will be lost.
-  - You are about to drop the column `role` on the `User` table. All the data in the column will be lost.
-  - You are about to drop the `Actividad` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `AttendanceSession` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `Ciclo` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `Profesor` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `StudentActividad` table. If the table is not empty, all the data it contains will be lost.
-  - A unique constraint covering the columns `[studentCode]` on the table `Student` will be added. If there are existing duplicate values, this will fail.
-  - Added the required column `issuedBy` to the `Receipt` table without a default value. This is not possible if the table is not empty.
-  - Added the required column `studentCode` to the `Student` table without a default value. This is not possible if the table is not empty.
-
-*/
 -- CreateEnum
 CREATE TYPE "UserStatus" AS ENUM ('ACTIVE', 'INACTIVE', 'SUSPENDED', 'LOCKED');
 
 -- CreateEnum
-CREATE TYPE "UserRoleType" AS ENUM ('ADMIN', 'TEACHER', 'PARENT', 'STAFF', 'ACCOUNTANT');
+CREATE TYPE "UserRoleType" AS ENUM ('ADMIN', 'TEACHER', 'PARENT', 'STAFF', 'ACCOUNTANT', 'STUDENT');
+
+-- CreateEnum
+CREATE TYPE "Gender" AS ENUM ('M', 'F', 'OTHER');
+
+-- CreateEnum
+CREATE TYPE "StudentStatus" AS ENUM ('ACTIVE', 'INACTIVE', 'GRADUATED', 'SUSPENDED', 'WITHDRAWN');
 
 -- CreateEnum
 CREATE TYPE "CourseType" AS ENUM ('REGULAR', 'WORKSHOP', 'EXTRA_CURRICULAR', 'SPECIAL');
@@ -55,6 +33,12 @@ CREATE TYPE "AssessmentType" AS ENUM ('QUIZ', 'EXAM', 'PROJECT', 'HOMEWORK', 'PA
 
 -- CreateEnum
 CREATE TYPE "AssessmentStatus" AS ENUM ('DRAFT', 'PUBLISHED', 'GRADED', 'ARCHIVED');
+
+-- CreateEnum
+CREATE TYPE "AttendanceStatus" AS ENUM ('PRESENT', 'ABSENT', 'LATE', 'EXCUSED', 'JUSTIFIED');
+
+-- CreateEnum
+CREATE TYPE "PaymentStatus" AS ENUM ('UNPAID', 'PENDING', 'PARTIAL', 'PAID', 'OVERDUE', 'WAIVED', 'REFUNDED');
 
 -- CreateEnum
 CREATE TYPE "PaymentMethod" AS ENUM ('CASH', 'YAPE', 'PLIN', 'TRANSFER', 'DEPOSIT', 'CREDIT_CARD', 'DEBIT_CARD', 'OTHER');
@@ -122,139 +106,23 @@ CREATE TYPE "TeacherEventType" AS ENUM ('MEETING', 'TRAINING', 'WORKSHOP', 'CONF
 -- CreateEnum
 CREATE TYPE "TeacherEventStatus" AS ENUM ('SCHEDULED', 'COMPLETED', 'CANCELLED', 'POSTPONED');
 
--- AlterEnum
-BEGIN;
-CREATE TYPE "AttendanceStatus_new" AS ENUM ('PRESENT', 'ABSENT', 'LATE', 'EXCUSED', 'JUSTIFIED');
-ALTER TABLE "public"."AttendanceRecord" ALTER COLUMN "status" DROP DEFAULT;
-ALTER TABLE "AttendanceRecord" ALTER COLUMN "status" TYPE "AttendanceStatus_new" USING ("status"::text::"AttendanceStatus_new");
-ALTER TYPE "AttendanceStatus" RENAME TO "AttendanceStatus_old";
-ALTER TYPE "AttendanceStatus_new" RENAME TO "AttendanceStatus";
-DROP TYPE "public"."AttendanceStatus_old";
-ALTER TABLE "AttendanceRecord" ALTER COLUMN "status" SET DEFAULT 'ABSENT';
-COMMIT;
+-- CreateTable
+CREATE TABLE "User" (
+    "id" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "emailVerified" TIMESTAMP(3),
+    "hashedPassword" TEXT NOT NULL,
+    "status" "UserStatus" NOT NULL DEFAULT 'ACTIVE',
+    "firstName" TEXT,
+    "lastName" TEXT,
+    "phone" TEXT,
+    "avatar" TEXT,
+    "lastLogin" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
--- AlterEnum
-ALTER TYPE "Gender" ADD VALUE 'OTHER';
-
--- AlterEnum
-BEGIN;
-CREATE TYPE "PaymentStatus_new" AS ENUM ('UNPAID', 'PENDING', 'PARTIAL', 'PAID', 'OVERDUE', 'WAIVED', 'REFUNDED');
-ALTER TABLE "public"."Payment" ALTER COLUMN "status" DROP DEFAULT;
-ALTER TABLE "Payment" ALTER COLUMN "status" TYPE "PaymentStatus_new" USING ("status"::text::"PaymentStatus_new");
-ALTER TYPE "PaymentStatus" RENAME TO "PaymentStatus_old";
-ALTER TYPE "PaymentStatus_new" RENAME TO "PaymentStatus";
-DROP TYPE "public"."PaymentStatus_old";
-ALTER TABLE "Payment" ALTER COLUMN "status" SET DEFAULT 'UNPAID';
-COMMIT;
-
--- AlterEnum
-BEGIN;
-CREATE TYPE "StudentStatus_new" AS ENUM ('ACTIVE', 'INACTIVE', 'GRADUATED', 'SUSPENDED', 'WITHDRAWN');
-ALTER TABLE "public"."Student" ALTER COLUMN "status" DROP DEFAULT;
-ALTER TABLE "Student" ALTER COLUMN "status" TYPE "StudentStatus_new" USING ("status"::text::"StudentStatus_new");
-ALTER TYPE "StudentStatus" RENAME TO "StudentStatus_old";
-ALTER TYPE "StudentStatus_new" RENAME TO "StudentStatus";
-DROP TYPE "public"."StudentStatus_old";
-ALTER TABLE "Student" ALTER COLUMN "status" SET DEFAULT 'ACTIVE';
-COMMIT;
-
--- DropForeignKey
-ALTER TABLE "Actividad" DROP CONSTRAINT "Actividad_cicloId_fkey";
-
--- DropForeignKey
-ALTER TABLE "Actividad" DROP CONSTRAINT "Actividad_profesorId_fkey";
-
--- DropForeignKey
-ALTER TABLE "AttendanceRecord" DROP CONSTRAINT "AttendanceRecord_sessionId_fkey";
-
--- DropForeignKey
-ALTER TABLE "AttendanceSession" DROP CONSTRAINT "AttendanceSession_actividadId_fkey";
-
--- DropForeignKey
-ALTER TABLE "Payment" DROP CONSTRAINT "Payment_cycleId_fkey";
-
--- DropForeignKey
-ALTER TABLE "Receipt" DROP CONSTRAINT "Receipt_cycleId_fkey";
-
--- DropForeignKey
-ALTER TABLE "StudentActividad" DROP CONSTRAINT "StudentActividad_actividadId_fkey";
-
--- DropForeignKey
-ALTER TABLE "StudentActividad" DROP CONSTRAINT "StudentActividad_studentId_fkey";
-
--- AlterTable
-ALTER TABLE "AttendanceRecord" ADD COLUMN     "markedBy" TEXT,
-ALTER COLUMN "status" SET DEFAULT 'ABSENT';
-
--- AlterTable
-ALTER TABLE "Payment" ADD COLUMN     "balance" DECIMAL(10,2) NOT NULL DEFAULT 0,
-ADD COLUMN     "concept" TEXT NOT NULL DEFAULT 'Monthly Fee',
-ADD COLUMN     "dueDate" TIMESTAMP(3),
-ADD COLUMN     "paidDate" TIMESTAMP(3),
-ALTER COLUMN "total" SET DATA TYPE DECIMAL(10,2),
-ALTER COLUMN "totalPaid" SET DATA TYPE DECIMAL(10,2),
-ALTER COLUMN "status" SET DEFAULT 'UNPAID';
-
--- AlterTable
-ALTER TABLE "PaymentDetail" DROP COLUMN "paymentType",
-DROP COLUMN "updatedAt",
-ADD COLUMN     "dueDate" TIMESTAMP(3),
-ADD COLUMN     "notes" TEXT,
-ADD COLUMN     "paymentMethod" "PaymentMethod" NOT NULL DEFAULT 'CASH',
-ADD COLUMN     "reference" TEXT,
-ALTER COLUMN "amount" SET DATA TYPE DECIMAL(10,2);
-
--- AlterTable
-ALTER TABLE "Receipt" DROP COLUMN "pagosJson",
-DROP COLUMN "servicio",
-ADD COLUMN     "concept" TEXT NOT NULL DEFAULT 'Monthly Fee',
-ADD COLUMN     "issuedBy" TEXT NOT NULL,
-ADD COLUMN     "paymentsJson" JSONB,
-ADD COLUMN     "pdfUrl" TEXT,
-ADD COLUMN     "printed" BOOLEAN NOT NULL DEFAULT false,
-ADD COLUMN     "status" "ReceiptStatus" NOT NULL DEFAULT 'ISSUED',
-ALTER COLUMN "total" SET DATA TYPE DECIMAL(10,2),
-ALTER COLUMN "totalPaid" SET DATA TYPE DECIMAL(10,2);
-
--- AlterTable
-ALTER TABLE "Student" DROP COLUMN "tutor",
-ADD COLUMN     "nationality" TEXT,
-ADD COLUMN     "studentCode" TEXT NOT NULL,
-ALTER COLUMN "status" SET DEFAULT 'ACTIVE';
-
--- AlterTable
-ALTER TABLE "User" DROP COLUMN "name",
-DROP COLUMN "role",
-ADD COLUMN     "avatar" TEXT,
-ADD COLUMN     "firstName" TEXT,
-ADD COLUMN     "lastLogin" TIMESTAMP(3),
-ADD COLUMN     "lastName" TEXT,
-ADD COLUMN     "phone" TEXT,
-ADD COLUMN     "status" "UserStatus" NOT NULL DEFAULT 'ACTIVE';
-
--- DropTable
-DROP TABLE "Actividad";
-
--- DropTable
-DROP TABLE "AttendanceSession";
-
--- DropTable
-DROP TABLE "Ciclo";
-
--- DropTable
-DROP TABLE "Profesor";
-
--- DropTable
-DROP TABLE "StudentActividad";
-
--- DropEnum
-DROP TYPE "PaymentType";
-
--- DropEnum
-DROP TYPE "Role";
-
--- DropEnum
-DROP TYPE "TipoActividad";
+    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
 
 -- CreateTable
 CREATE TABLE "Role" (
@@ -299,7 +167,6 @@ CREATE TABLE "ParentProfile" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "relationship" TEXT,
-    "occupation" TEXT,
     "emergencyContact" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -319,6 +186,17 @@ CREATE TABLE "StaffProfile" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "StaffProfile_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "StudentProfile" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "studentId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "StudentProfile_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -413,6 +291,27 @@ CREATE TABLE "ClassSession" (
 );
 
 -- CreateTable
+CREATE TABLE "Student" (
+    "id" TEXT NOT NULL,
+    "studentCode" TEXT NOT NULL,
+    "firstName" TEXT NOT NULL,
+    "lastNameFather" TEXT NOT NULL,
+    "lastNameMother" TEXT NOT NULL,
+    "birthDate" TIMESTAMP(3),
+    "gender" "Gender",
+    "grade" TEXT,
+    "school" TEXT,
+    "phone" TEXT,
+    "address" TEXT,
+    "pickupPerson" TEXT,
+    "status" "StudentStatus" NOT NULL DEFAULT 'ACTIVE',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Student_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "Enrollment" (
     "id" TEXT NOT NULL,
     "studentId" TEXT NOT NULL,
@@ -479,6 +378,79 @@ CREATE TABLE "StudentGrade" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "StudentGrade_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AttendanceRecord" (
+    "id" TEXT NOT NULL,
+    "sessionId" TEXT NOT NULL,
+    "studentId" TEXT NOT NULL,
+    "status" "AttendanceStatus" NOT NULL DEFAULT 'ABSENT',
+    "comment" TEXT,
+    "markedBy" TEXT,
+    "markedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AttendanceRecord_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Payment" (
+    "id" TEXT NOT NULL,
+    "studentId" TEXT NOT NULL,
+    "cycleId" TEXT NOT NULL,
+    "month" INTEGER NOT NULL,
+    "year" INTEGER NOT NULL,
+    "concept" TEXT NOT NULL DEFAULT 'Monthly Fee',
+    "total" DECIMAL(10,2) NOT NULL,
+    "totalPaid" DECIMAL(10,2) NOT NULL DEFAULT 0,
+    "balance" DECIMAL(10,2) NOT NULL DEFAULT 0,
+    "status" "PaymentStatus" NOT NULL DEFAULT 'UNPAID',
+    "dueDate" TIMESTAMP(3),
+    "paidDate" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Payment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "PaymentDetail" (
+    "id" TEXT NOT NULL,
+    "paymentId" TEXT NOT NULL,
+    "date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "amount" DECIMAL(10,2) NOT NULL,
+    "paymentMethod" "PaymentMethod" NOT NULL DEFAULT 'CASH',
+    "reference" TEXT,
+    "notes" TEXT,
+    "dueDate" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "PaymentDetail_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Receipt" (
+    "id" TEXT NOT NULL,
+    "correlativo" SERIAL NOT NULL,
+    "receiptNo" TEXT,
+    "studentId" TEXT NOT NULL,
+    "cycleId" TEXT NOT NULL,
+    "paymentId" TEXT NOT NULL,
+    "month" INTEGER NOT NULL,
+    "year" INTEGER NOT NULL,
+    "concept" TEXT NOT NULL DEFAULT 'Monthly Fee',
+    "total" DECIMAL(10,2) NOT NULL,
+    "totalPaid" DECIMAL(10,2) NOT NULL,
+    "paymentsJson" JSONB,
+    "issuedBy" TEXT NOT NULL,
+    "issuedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "status" "ReceiptStatus" NOT NULL DEFAULT 'ISSUED',
+    "pdfUrl" TEXT,
+    "printed" BOOLEAN NOT NULL DEFAULT false,
+
+    CONSTRAINT "Receipt_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -781,6 +753,18 @@ CREATE TABLE "TeacherEventAttendee" (
 );
 
 -- CreateIndex
+CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+-- CreateIndex
+CREATE INDEX "User_email_idx" ON "User"("email");
+
+-- CreateIndex
+CREATE INDEX "User_status_idx" ON "User"("status");
+
+-- CreateIndex
+CREATE INDEX "User_createdAt_idx" ON "User"("createdAt");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Role_name_key" ON "Role"("name");
 
 -- CreateIndex
@@ -815,6 +799,15 @@ CREATE UNIQUE INDEX "StaffProfile_employeeCode_key" ON "StaffProfile"("employeeC
 
 -- CreateIndex
 CREATE INDEX "StaffProfile_employeeCode_idx" ON "StaffProfile"("employeeCode");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "StudentProfile_userId_key" ON "StudentProfile"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "StudentProfile_studentId_key" ON "StudentProfile"("studentId");
+
+-- CreateIndex
+CREATE INDEX "StudentProfile_studentId_idx" ON "StudentProfile"("studentId");
 
 -- CreateIndex
 CREATE INDEX "ParentStudentRelation_parentId_idx" ON "ParentStudentRelation"("parentId");
@@ -892,6 +885,21 @@ CREATE INDEX "ClassSession_startsAt_idx" ON "ClassSession"("startsAt");
 CREATE INDEX "ClassSession_status_idx" ON "ClassSession"("status");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Student_studentCode_key" ON "Student"("studentCode");
+
+-- CreateIndex
+CREATE INDEX "Student_studentCode_idx" ON "Student"("studentCode");
+
+-- CreateIndex
+CREATE INDEX "Student_lastNameFather_lastNameMother_firstName_idx" ON "Student"("lastNameFather", "lastNameMother", "firstName");
+
+-- CreateIndex
+CREATE INDEX "Student_status_idx" ON "Student"("status");
+
+-- CreateIndex
+CREATE INDEX "Student_grade_idx" ON "Student"("grade");
+
+-- CreateIndex
 CREATE INDEX "Enrollment_studentId_idx" ON "Enrollment"("studentId");
 
 -- CreateIndex
@@ -941,6 +949,66 @@ CREATE INDEX "StudentGrade_percentage_idx" ON "StudentGrade"("percentage");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "StudentGrade_assessmentId_studentId_key" ON "StudentGrade"("assessmentId", "studentId");
+
+-- CreateIndex
+CREATE INDEX "AttendanceRecord_studentId_idx" ON "AttendanceRecord"("studentId");
+
+-- CreateIndex
+CREATE INDEX "AttendanceRecord_sessionId_idx" ON "AttendanceRecord"("sessionId");
+
+-- CreateIndex
+CREATE INDEX "AttendanceRecord_status_idx" ON "AttendanceRecord"("status");
+
+-- CreateIndex
+CREATE INDEX "AttendanceRecord_markedAt_idx" ON "AttendanceRecord"("markedAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AttendanceRecord_sessionId_studentId_key" ON "AttendanceRecord"("sessionId", "studentId");
+
+-- CreateIndex
+CREATE INDEX "Payment_cycleId_year_month_idx" ON "Payment"("cycleId", "year", "month");
+
+-- CreateIndex
+CREATE INDEX "Payment_studentId_year_month_idx" ON "Payment"("studentId", "year", "month");
+
+-- CreateIndex
+CREATE INDEX "Payment_status_dueDate_idx" ON "Payment"("status", "dueDate");
+
+-- CreateIndex
+CREATE INDEX "Payment_dueDate_idx" ON "Payment"("dueDate");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Payment_studentId_cycleId_month_year_key" ON "Payment"("studentId", "cycleId", "month", "year");
+
+-- CreateIndex
+CREATE INDEX "PaymentDetail_paymentId_idx" ON "PaymentDetail"("paymentId");
+
+-- CreateIndex
+CREATE INDEX "PaymentDetail_date_idx" ON "PaymentDetail"("date");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Receipt_correlativo_key" ON "Receipt"("correlativo");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Receipt_receiptNo_key" ON "Receipt"("receiptNo");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Receipt_paymentId_key" ON "Receipt"("paymentId");
+
+-- CreateIndex
+CREATE INDEX "Receipt_correlativo_idx" ON "Receipt"("correlativo");
+
+-- CreateIndex
+CREATE INDEX "Receipt_cycleId_year_month_idx" ON "Receipt"("cycleId", "year", "month");
+
+-- CreateIndex
+CREATE INDEX "Receipt_studentId_year_month_idx" ON "Receipt"("studentId", "year", "month");
+
+-- CreateIndex
+CREATE INDEX "Receipt_issuedAt_idx" ON "Receipt"("issuedAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Receipt_studentId_cycleId_month_year_key" ON "Receipt"("studentId", "cycleId", "month", "year");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "LibraryBook_isbn_key" ON "LibraryBook"("isbn");
@@ -1134,48 +1202,6 @@ CREATE INDEX "TeacherEventAttendee_status_idx" ON "TeacherEventAttendee"("status
 -- CreateIndex
 CREATE UNIQUE INDEX "TeacherEventAttendee_eventId_teacherId_key" ON "TeacherEventAttendee"("eventId", "teacherId");
 
--- CreateIndex
-CREATE INDEX "AttendanceRecord_status_idx" ON "AttendanceRecord"("status");
-
--- CreateIndex
-CREATE INDEX "AttendanceRecord_markedAt_idx" ON "AttendanceRecord"("markedAt");
-
--- CreateIndex
-CREATE INDEX "Payment_status_dueDate_idx" ON "Payment"("status", "dueDate");
-
--- CreateIndex
-CREATE INDEX "Payment_dueDate_idx" ON "Payment"("dueDate");
-
--- CreateIndex
-CREATE INDEX "PaymentDetail_date_idx" ON "PaymentDetail"("date");
-
--- CreateIndex
-CREATE INDEX "Receipt_correlativo_idx" ON "Receipt"("correlativo");
-
--- CreateIndex
-CREATE INDEX "Receipt_issuedAt_idx" ON "Receipt"("issuedAt");
-
--- CreateIndex
-CREATE UNIQUE INDEX "Student_studentCode_key" ON "Student"("studentCode");
-
--- CreateIndex
-CREATE INDEX "Student_studentCode_idx" ON "Student"("studentCode");
-
--- CreateIndex
-CREATE INDEX "Student_status_idx" ON "Student"("status");
-
--- CreateIndex
-CREATE INDEX "Student_grade_idx" ON "Student"("grade");
-
--- CreateIndex
-CREATE INDEX "User_email_idx" ON "User"("email");
-
--- CreateIndex
-CREATE INDEX "User_status_idx" ON "User"("status");
-
--- CreateIndex
-CREATE INDEX "User_createdAt_idx" ON "User"("createdAt");
-
 -- AddForeignKey
 ALTER TABLE "UserRole" ADD CONSTRAINT "UserRole_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -1190,6 +1216,12 @@ ALTER TABLE "ParentProfile" ADD CONSTRAINT "ParentProfile_userId_fkey" FOREIGN K
 
 -- AddForeignKey
 ALTER TABLE "StaffProfile" ADD CONSTRAINT "StaffProfile_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "StudentProfile" ADD CONSTRAINT "StudentProfile_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "StudentProfile" ADD CONSTRAINT "StudentProfile_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES "Student"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ParentStudentRelation" ADD CONSTRAINT "ParentStudentRelation_parentId_fkey" FOREIGN KEY ("parentId") REFERENCES "ParentProfile"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -1246,13 +1278,28 @@ ALTER TABLE "StudentGrade" ADD CONSTRAINT "StudentGrade_gradedBy_fkey" FOREIGN K
 ALTER TABLE "AttendanceRecord" ADD CONSTRAINT "AttendanceRecord_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "ClassSession"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "AttendanceRecord" ADD CONSTRAINT "AttendanceRecord_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES "Student"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "AttendanceRecord" ADD CONSTRAINT "AttendanceRecord_markedBy_fkey" FOREIGN KEY ("markedBy") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Payment" ADD CONSTRAINT "Payment_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES "Student"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Payment" ADD CONSTRAINT "Payment_cycleId_fkey" FOREIGN KEY ("cycleId") REFERENCES "AcademicCycle"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "PaymentDetail" ADD CONSTRAINT "PaymentDetail_paymentId_fkey" FOREIGN KEY ("paymentId") REFERENCES "Payment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Receipt" ADD CONSTRAINT "Receipt_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES "Student"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "Receipt" ADD CONSTRAINT "Receipt_cycleId_fkey" FOREIGN KEY ("cycleId") REFERENCES "AcademicCycle"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Receipt" ADD CONSTRAINT "Receipt_paymentId_fkey" FOREIGN KEY ("paymentId") REFERENCES "Payment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Receipt" ADD CONSTRAINT "Receipt_issuedBy_fkey" FOREIGN KEY ("issuedBy") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
