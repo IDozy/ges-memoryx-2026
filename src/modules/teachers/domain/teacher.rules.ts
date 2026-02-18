@@ -29,12 +29,9 @@ export function normalizeTeacherUpdate(dto: UpdateTeacherDTO): UpdateTeacherInpu
   if (dto.firstName !== undefined) out.firstName = normalizeText(dto.firstName);
   if (dto.lastName !== undefined) out.lastName = normalizeText(dto.lastName);
   if (dto.phone !== undefined) out.phone = normalizeText(dto.phone);
-
   if (dto.status !== undefined) out.status = normalizeUserStatus(dto.status);
-
   if (dto.specialty !== undefined) out.specialty = normalizeText(dto.specialty);
   if (dto.department !== undefined) out.department = normalizeText(dto.department);
-
   if (dto.hireDate !== undefined) out.hireDate = safeDate(dto.hireDate);
 
   return out;
