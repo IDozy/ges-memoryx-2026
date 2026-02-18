@@ -4,17 +4,12 @@ import { prisma } from "@/src/shared/db/prisma";
 
 
 export default async function AttendancePage() {
-  const ciclos = await prisma.ciclo.findMany({
+ const ciclos = await prisma.student.findMany({
   orderBy: {
     createdAt: "desc", // 👈 el más reciente primero
   },
-  include: {
-    actividades: {
-      orderBy: { nombre: "asc" },
-    },
-  },
+  
 });
-
 
   return (
     <div className="p-4">
@@ -24,8 +19,6 @@ export default async function AttendancePage() {
           Marca asistencia por actividad y fecha.
         </p>
       </div>
-
-      <AttendanceClient ciclos={ciclos} />
     </div>
   );
 }

@@ -3,10 +3,7 @@ import AttendanceWeekClient from "@/src/components/attendance-eliminar-actualiza
 import { prisma } from "@/src/shared/db/prisma";
 
 export default async function AttendanceWeekPage() {
-  const ciclos = await prisma.ciclo.findMany({
-    orderBy: { createdAt: "desc" }, // 👈 más reciente primero
-    include: { actividades: { orderBy: { nombre: "asc" } } },
-  });
+ 
 
   return (
     <div className="p-4">
@@ -17,7 +14,7 @@ export default async function AttendanceWeekPage() {
         </p>
       </div>
 
-      <AttendanceWeekClient ciclos={ciclos} />
+    
     </div>
   );
 }
