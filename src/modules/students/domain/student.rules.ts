@@ -1,4 +1,5 @@
-import type { UpdateStudentDTO } from "../application/dtos/update-student.dto";
+import { UpdateStudentDTO } from "../application/dtos/student.dto";
+
 
 export function normalizeText(v: unknown) {
   const s = String(v ?? "").trim();

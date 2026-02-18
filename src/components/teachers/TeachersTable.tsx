@@ -39,14 +39,13 @@ export default function TeachersTable({
 
   return (
     <div className="space-y-3">
-      {/* Header actions */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative w-full sm:max-w-md">
             <input
               value={globalFilter ?? ""}
               onChange={(e) => setGlobalFilter(e.target.value)}
-              placeholder="Buscar por código, nombre, email, teléfono, especialidad..."
+              placeholder="Buscar por nombre, email, código, departamento..."
               className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/10"
             />
           </div>
@@ -64,7 +63,6 @@ export default function TeachersTable({
         </button>
       </div>
 
-      {/* Table */}
       <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm">
         <div className="overflow-x-auto">
           <div className="relative h-[calc(100dvh-259px)] overflow-x-auto overflow-y-auto">
@@ -87,10 +85,7 @@ export default function TeachersTable({
               <tbody>
                 {table.getRowModel().rows.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan={columns.length}
-                      className="px-4 py-8 text-center opacity-70"
-                    >
+                    <td colSpan={columns.length} className="px-4 py-8 text-center opacity-70">
                       No hay resultados.
                     </td>
                   </tr>
@@ -102,10 +97,7 @@ export default function TeachersTable({
                     >
                       {row.getVisibleCells().map((cell) => (
                         <td key={cell.id} className="px-4 py-3">
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </td>
                       ))}
                     </tr>

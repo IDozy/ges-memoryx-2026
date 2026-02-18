@@ -3,10 +3,11 @@ import type { Prisma, $Enums } from "@/src/generated/prisma";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
 
-import type { CreateStudentDTO } from "../application/dtos/create-student.dto";
+
 import type { StudentListResult, StudentRecord, StudentRepository } from "../domain/student.repository";
 import { normalizeGender, normalizeStudentStatus, normalizeText, safeDate } from "../domain/student.rules";
-import { UpdateStudentDTO } from "../application/dtos/update-student.dto";
+import { CreateStudentDTO, UpdateStudentDTO } from "../application/dtos/student.dto";
+
 
 
 function onlyLettersLower(v: string) { //funcion quita tildes/ñ -> n, y deja solo letras

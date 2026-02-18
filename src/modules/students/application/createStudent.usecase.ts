@@ -1,8 +1,8 @@
-import type { CreateStudentDTO } from "./dtos/create-student.dto";
-import { assertCreateStudentDTO } from "./dtos/create-student.dto";
+
 import type { StudentRepository } from "../domain/student.repository";
 import { StudentEntity } from "../domain/student.entity";
 import { normalizeGender, normalizeStudentStatus, safeDate } from "../domain/student.rules";
+import { assertCreateStudentDTO, CreateStudentDTO } from "./dtos/student.dto";
 
 export class CreateStudentUseCase {
   constructor(private readonly repo: StudentRepository) {}

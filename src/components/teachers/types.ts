@@ -1,23 +1,14 @@
-// src/components/teachers/types.ts
-
 export type TeacherEstado = "activo" | "inactivo" | "suspendido" | "bloqueado";
 
-/**
- * UI model (lo que usa la tabla + modal)
- * - id: TeacherProfile.id
- * - userId: User.id (para acciones tipo reset password, etc.)
- */
 export type Teacher = {
-  id: string;
-  userId: string;
+  id: string;     // TeacherProfile.id
+  userId: string; // User.id
 
-  // User
   email: string;
   nombres: string;
   apellidos: string;
   telefono: string;
 
-  // TeacherProfile
   employeeCode: string;
   especialidad: string;
   departamento: string;
@@ -26,31 +17,20 @@ export type Teacher = {
   estado: TeacherEstado;
 };
 
-/**
- * Payload para CREATE (API)
- * Basado en tu schema:
- * - User: email, hashedPassword (lo crea backend), status, firstName, lastName, phone
- * - TeacherProfile: employeeCode, specialty, department, hireDate
- *
- * ✅ Nota: hashedPassword NO se envía desde el front.
- * ✅ Si employeeCode lo generas en backend/trigger, puedes hacerlo opcional.
- */
 export type CreateTeacherPayload = {
+  // user
   email: string;
+  password?: string; // opcional si luego harás reset o temp
   firstName?: string | null;
   lastName?: string | null;
   phone?: string | null;
-
   status?: "ACTIVE" | "INACTIVE" | "SUSPENDED" | "LOCKED";
 
-  employeeCode?: string; // opcional si se autogenera
+  // teacherProfile
+  employeeCode?: string; // si lo generas, puede omitirse
   specialty?: string | null;
   department?: string | null;
-  hireDate?: string | null; // ISO (Date.toISOString())
+  hireDate?: string | null; // ISO
 };
 
-/**
- * Payload para UPDATE (API)
- * Normalmente PATCH parcial.
- */
 export type UpdateTeacherPayload = Partial<CreateTeacherPayload>;

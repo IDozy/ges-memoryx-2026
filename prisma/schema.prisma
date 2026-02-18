@@ -249,6 +249,7 @@ enum BankAccountType {
  * RBAC: Un usuario puede tener múltiples roles
  * Ej: ADMIN + TEACHER, o STAFF + ACCOUNTANT
  */
+
 model User {
   id             String     @id @default(uuid())
   email          String     @unique
@@ -267,13 +268,36 @@ model User {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  // ✅ perfiles (opuestos)
-  teacherProfile TeacherProfile?
-  parentProfile  ParentProfile?
-  staffProfile   StaffProfile?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Soft delete: quien eliminó a quien (User -> User)
+  deletedByUser User?  @relation("UserDeletedBy", fields: [deletedBy], references: [id], onDelete: SetNull)
+  deletedUsers  User[] @relation("UserDeletedBy")
+
+  // perfiles
+  teacherProfile         TeacherProfile?  @relation("TeacherProfileUser")
+  deletedTeacherProfiles TeacherProfile[] @relation("TeacherProfileDeletedBy")
+
+  parentProfile         ParentProfile?
+  deletedParentProfiles ParentProfile[] @relation("ParentProfileDeletedBy")
+
+  staffProfile         StaffProfile?
+  deletedStaffProfiles StaffProfile[] @relation("StaffProfileDeletedBy")
+
   studentProfile StudentProfile?
 
-  // ✅ existentes
+  // soft delete opuestos de otras tablas
+  deletedAcademicCycles   AcademicCycle[]   @relation("AcademicCycleDeletedBy")
+  deletedCourses          Course[]          @relation("CourseDeletedBy")
+  deletedClassSections    ClassSection[]    @relation("ClassSectionDeletedBy")
+  deletedStudents         Student[]         @relation("StudentDeletedBy")
+  deletedLibraryBooks     LibraryBook[]     @relation("LibraryBookDeletedBy")
+  deletedCourseMaterials  CourseMaterial[]  @relation("CourseMaterialDeletedBy")
+  deletedTeacherContracts TeacherContract[] @relation("TeacherContractDeletedBy")
+  deletedTeacherEvents    TeacherEvent[]    @relation("TeacherEventDeletedBy")
+
+  // existentes
   createdAssessments Assessment[]   @relation("AssessmentCreator")
   gradedAssessments  StudentGrade[] @relation("GradeGrader")
   loginLogs          LoginLog[]
@@ -290,7 +314,7 @@ model User {
   recordedTeacherAttendance      TeacherAttendanceClass[] @relation("AttendanceRecorder")
   recordedTeacherEventAttendance TeacherAttendanceEvent[] @relation("EventAttendanceRecorder")
 
-  // ✅ FALTABAN (opuestos de relaciones a User)
+  // faltaban
   markedAttendanceRecords AttendanceRecord[] @relation("AttendanceMarker")
   issuedReceipts          Receipt[]          @relation("ReceiptIssuerUser")
   issuedLibraryBorrows    LibraryBorrow[]    @relation("LibraryBorrowIssuer")
@@ -298,6 +322,7 @@ model User {
   teacherContractsSigned  TeacherContract[]  @relation("TeacherContractSigner")
   organizedTeacherEvents  TeacherEvent[]     @relation("TeacherEventOrganizer")
 
+  @@index([deletedAt])
   @@index([email])
   @@index([status])
   @@index([createdAt])
@@ -342,10 +367,12 @@ model UserRole {
  * Perfiles especializados (uno por rol activo)
  * NOTA: Validar en aplicación que un usuario no tenga múltiples perfiles del mismo tipo
  */
+
 model TeacherProfile {
   id     String @id @default(uuid())
   userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  user User @relation("TeacherProfileUser", fields: [userId], references: [id], onDelete: Cascade)
 
   employeeCode   String   @unique
   specialty      String?
@@ -354,8 +381,13 @@ model TeacherProfile {
   hireDate       DateTime @default(now())
   department     String?
 
-  createdAt         DateTime                 @default(now())
-  updatedAt         DateTime                 @updatedAt
+  deletedAt     DateTime?
+  deletedBy     String?
+  deletedByUser User?     @relation("TeacherProfileDeletedBy", fields: [deletedBy], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   contracts         TeacherContract[]
   attendanceClasses TeacherAttendanceClass[]
   attendanceEvents  TeacherAttendanceEvent[]
@@ -363,6 +395,7 @@ model TeacherProfile {
   sections          ClassSection[]
 
   @@index([employeeCode])
+  @@index([deletedAt])
 }
 
 model ParentProfile {
@@ -375,9 +408,13 @@ model ParentProfile {
 
   studentRelations ParentStudentRelation[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+  deletedBy     String?
+  deletedByUser User?     @relation("ParentProfileDeletedBy", fields: [deletedBy], references: [id], onDelete: SetNull)
 
+  @@index([deletedAt])
   @@index([userId])
 }
 
@@ -391,9 +428,13 @@ model StaffProfile {
   department   String?
   hireDate     DateTime @default(now())
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+  deletedBy     String?
+  deletedByUser User?     @relation("StaffProfileDeletedBy", fields: [deletedBy], references: [id], onDelete: SetNull)
 
+  @@index([deletedAt])
   @@index([employeeCode])
 }
 
@@ -454,9 +495,13 @@ model AcademicCycle {
   payments    Payment[]
   receipts    Receipt[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+  deletedBy     String?
+  deletedByUser User?     @relation("AcademicCycleDeletedBy", fields: [deletedBy], references: [id], onDelete: SetNull)
 
+  @@index([deletedAt])
   @@index([year])
   @@index([status])
   @@index([startDate, endDate])
@@ -478,9 +523,13 @@ model Course {
   sections  ClassSection[]
   materials CourseMaterial[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+  deletedBy     String?
+  deletedByUser User?     @relation("CourseDeletedBy", fields: [deletedBy], references: [id], onDelete: SetNull)
 
+  @@index([deletedAt])
   @@index([code])
   @@index([gradeLevel])
   @@index([cycleId])
@@ -511,10 +560,14 @@ model ClassSection {
   enrollments SectionEnrollment[]
   assessments Assessment[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+  deletedBy     String?
+  deletedByUser User?     @relation("ClassSectionDeletedBy", fields: [deletedBy], references: [id], onDelete: SetNull)
 
   @@unique([courseId, name, cycleId])
+  @@index([deletedAt])
   @@index([sectionCode])
   @@index([cycleId])
   @@index([teacherId])
@@ -606,9 +659,13 @@ model Student {
   parentRelations    ParentStudentRelation[]
   profile            StudentProfile?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+  deletedBy     String?
+  deletedByUser User?     @relation("StudentDeletedBy", fields: [deletedBy], references: [id], onDelete: SetNull)
 
+  @@index([deletedAt])
   @@index([studentCode])
   @@index([lastNameFather, lastNameMother, firstName])
   @@index([status])
@@ -895,9 +952,13 @@ model LibraryBook {
 
   borrowings LibraryBorrow[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+  deletedBy     String?
+  deletedByUser User?     @relation("LibraryBookDeletedBy", fields: [deletedBy], references: [id], onDelete: SetNull)
 
+  @@index([deletedAt])
   @@index([isbn])
   @@index([title])
   @@index([author])
@@ -1034,9 +1095,13 @@ model CourseMaterial {
 
   downloadCount Int @default(0)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+  deletedBy     String?
+  deletedByUser User?     @relation("CourseMaterialDeletedBy", fields: [deletedBy], references: [id], onDelete: SetNull)
 
+  @@index([deletedAt])
   @@index([courseId])
   @@index([fileType])
   @@index([isVisible])
@@ -1166,14 +1231,18 @@ model TeacherContract {
   signedById String? // ✅ Relación explícita con User
   signedBy   User?     @relation("TeacherContractSigner", fields: [signedById], references: [id], onDelete: SetNull)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+  deletedBy     String?
+  deletedByUser User?     @relation("TeacherContractDeletedBy", fields: [deletedBy], references: [id], onDelete: SetNull)
 
   // Relaciones
   payrolls          TeacherPayroll[]
   attendanceClasses TeacherAttendanceClass[]
   attendanceEvents  TeacherAttendanceEvent[]
 
+  @@index([deletedAt])
   @@index([teacherId])
   @@index([contractNumber])
   @@index([status])
@@ -1496,9 +1565,13 @@ model TeacherEvent {
   // Asistentes
   attendees TeacherEventAttendee[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+  deletedBy     String?
+  deletedByUser User?     @relation("TeacherEventDeletedBy", fields: [deletedBy], references: [id], onDelete: SetNull)
 
+  @@index([deletedAt])
   @@index([eventType])
   @@index([startsAt])
   @@index([status])

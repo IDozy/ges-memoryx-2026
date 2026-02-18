@@ -120,6 +120,8 @@ CREATE TABLE "User" (
     "lastLogin" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
+    "deletedBy" TEXT,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
@@ -156,6 +158,8 @@ CREATE TABLE "TeacherProfile" (
     "bio" TEXT,
     "hireDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "department" TEXT,
+    "deletedAt" TIMESTAMP(3),
+    "deletedBy" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -170,6 +174,8 @@ CREATE TABLE "ParentProfile" (
     "emergencyContact" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
+    "deletedBy" TEXT,
 
     CONSTRAINT "ParentProfile_pkey" PRIMARY KEY ("id")
 );
@@ -184,6 +190,8 @@ CREATE TABLE "StaffProfile" (
     "hireDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
+    "deletedBy" TEXT,
 
     CONSTRAINT "StaffProfile_pkey" PRIMARY KEY ("id")
 );
@@ -224,6 +232,8 @@ CREATE TABLE "AcademicCycle" (
     "status" "CycleStatus" NOT NULL DEFAULT 'ACTIVE',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
+    "deletedBy" TEXT,
 
     CONSTRAINT "AcademicCycle_pkey" PRIMARY KEY ("id")
 );
@@ -241,6 +251,8 @@ CREATE TABLE "Course" (
     "cycleId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
+    "deletedBy" TEXT,
 
     CONSTRAINT "Course_pkey" PRIMARY KEY ("id")
 );
@@ -259,6 +271,8 @@ CREATE TABLE "ClassSection" (
     "status" "SectionStatus" NOT NULL DEFAULT 'ACTIVE',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
+    "deletedBy" TEXT,
 
     CONSTRAINT "ClassSection_pkey" PRIMARY KEY ("id")
 );
@@ -307,6 +321,8 @@ CREATE TABLE "Student" (
     "status" "StudentStatus" NOT NULL DEFAULT 'ACTIVE',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
+    "deletedBy" TEXT,
 
     CONSTRAINT "Student_pkey" PRIMARY KEY ("id")
 );
@@ -470,6 +486,8 @@ CREATE TABLE "LibraryBook" (
     "status" "BookStatus" NOT NULL DEFAULT 'ACTIVE',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
+    "deletedBy" TEXT,
 
     CONSTRAINT "LibraryBook_pkey" PRIMARY KEY ("id")
 );
@@ -546,6 +564,8 @@ CREATE TABLE "CourseMaterial" (
     "downloadCount" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
+    "deletedBy" TEXT,
 
     CONSTRAINT "CourseMaterial_pkey" PRIMARY KEY ("id")
 );
@@ -612,6 +632,8 @@ CREATE TABLE "TeacherContract" (
     "signedById" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
+    "deletedBy" TEXT,
 
     CONSTRAINT "TeacherContract_pkey" PRIMARY KEY ("id")
 );
@@ -735,6 +757,8 @@ CREATE TABLE "TeacherEvent" (
     "status" "TeacherEventStatus" NOT NULL DEFAULT 'SCHEDULED',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
+    "deletedBy" TEXT,
 
     CONSTRAINT "TeacherEvent_pkey" PRIMARY KEY ("id")
 );
@@ -754,6 +778,9 @@ CREATE TABLE "TeacherEventAttendee" (
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+-- CreateIndex
+CREATE INDEX "User_deletedAt_idx" ON "User"("deletedAt");
 
 -- CreateIndex
 CREATE INDEX "User_email_idx" ON "User"("email");
@@ -786,7 +813,13 @@ CREATE UNIQUE INDEX "TeacherProfile_employeeCode_key" ON "TeacherProfile"("emplo
 CREATE INDEX "TeacherProfile_employeeCode_idx" ON "TeacherProfile"("employeeCode");
 
 -- CreateIndex
+CREATE INDEX "TeacherProfile_deletedAt_idx" ON "TeacherProfile"("deletedAt");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "ParentProfile_userId_key" ON "ParentProfile"("userId");
+
+-- CreateIndex
+CREATE INDEX "ParentProfile_deletedAt_idx" ON "ParentProfile"("deletedAt");
 
 -- CreateIndex
 CREATE INDEX "ParentProfile_userId_idx" ON "ParentProfile"("userId");
@@ -796,6 +829,9 @@ CREATE UNIQUE INDEX "StaffProfile_userId_key" ON "StaffProfile"("userId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "StaffProfile_employeeCode_key" ON "StaffProfile"("employeeCode");
+
+-- CreateIndex
+CREATE INDEX "StaffProfile_deletedAt_idx" ON "StaffProfile"("deletedAt");
 
 -- CreateIndex
 CREATE INDEX "StaffProfile_employeeCode_idx" ON "StaffProfile"("employeeCode");
@@ -825,6 +861,9 @@ CREATE UNIQUE INDEX "ParentStudentRelation_parentId_studentId_key" ON "ParentStu
 CREATE UNIQUE INDEX "AcademicCycle_name_key" ON "AcademicCycle"("name");
 
 -- CreateIndex
+CREATE INDEX "AcademicCycle_deletedAt_idx" ON "AcademicCycle"("deletedAt");
+
+-- CreateIndex
 CREATE INDEX "AcademicCycle_year_idx" ON "AcademicCycle"("year");
 
 -- CreateIndex
@@ -835,6 +874,9 @@ CREATE INDEX "AcademicCycle_startDate_endDate_idx" ON "AcademicCycle"("startDate
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Course_code_key" ON "Course"("code");
+
+-- CreateIndex
+CREATE INDEX "Course_deletedAt_idx" ON "Course"("deletedAt");
 
 -- CreateIndex
 CREATE INDEX "Course_code_idx" ON "Course"("code");
@@ -850,6 +892,9 @@ CREATE INDEX "Course_status_idx" ON "Course"("status");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "ClassSection_sectionCode_key" ON "ClassSection"("sectionCode");
+
+-- CreateIndex
+CREATE INDEX "ClassSection_deletedAt_idx" ON "ClassSection"("deletedAt");
 
 -- CreateIndex
 CREATE INDEX "ClassSection_sectionCode_idx" ON "ClassSection"("sectionCode");
@@ -886,6 +931,9 @@ CREATE INDEX "ClassSession_status_idx" ON "ClassSession"("status");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Student_studentCode_key" ON "Student"("studentCode");
+
+-- CreateIndex
+CREATE INDEX "Student_deletedAt_idx" ON "Student"("deletedAt");
 
 -- CreateIndex
 CREATE INDEX "Student_studentCode_idx" ON "Student"("studentCode");
@@ -1014,6 +1062,9 @@ CREATE UNIQUE INDEX "Receipt_studentId_cycleId_month_year_key" ON "Receipt"("stu
 CREATE UNIQUE INDEX "LibraryBook_isbn_key" ON "LibraryBook"("isbn");
 
 -- CreateIndex
+CREATE INDEX "LibraryBook_deletedAt_idx" ON "LibraryBook"("deletedAt");
+
+-- CreateIndex
 CREATE INDEX "LibraryBook_isbn_idx" ON "LibraryBook"("isbn");
 
 -- CreateIndex
@@ -1071,6 +1122,9 @@ CREATE INDEX "Announcement_status_idx" ON "Announcement"("status");
 CREATE INDEX "Announcement_publishedAt_idx" ON "Announcement"("publishedAt");
 
 -- CreateIndex
+CREATE INDEX "CourseMaterial_deletedAt_idx" ON "CourseMaterial"("deletedAt");
+
+-- CreateIndex
 CREATE INDEX "CourseMaterial_courseId_idx" ON "CourseMaterial"("courseId");
 
 -- CreateIndex
@@ -1105,6 +1159,9 @@ CREATE INDEX "AuditLog_createdAt_idx" ON "AuditLog"("createdAt");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "TeacherContract_contractNumber_key" ON "TeacherContract"("contractNumber");
+
+-- CreateIndex
+CREATE INDEX "TeacherContract_deletedAt_idx" ON "TeacherContract"("deletedAt");
 
 -- CreateIndex
 CREATE INDEX "TeacherContract_teacherId_idx" ON "TeacherContract"("teacherId");
@@ -1182,6 +1239,9 @@ CREATE INDEX "TeacherAttendanceEvent_status_idx" ON "TeacherAttendanceEvent"("st
 CREATE UNIQUE INDEX "TeacherAttendanceEvent_contractId_eventDate_eventTitle_key" ON "TeacherAttendanceEvent"("contractId", "eventDate", "eventTitle");
 
 -- CreateIndex
+CREATE INDEX "TeacherEvent_deletedAt_idx" ON "TeacherEvent"("deletedAt");
+
+-- CreateIndex
 CREATE INDEX "TeacherEvent_eventType_idx" ON "TeacherEvent"("eventType");
 
 -- CreateIndex
@@ -1203,6 +1263,9 @@ CREATE INDEX "TeacherEventAttendee_status_idx" ON "TeacherEventAttendee"("status
 CREATE UNIQUE INDEX "TeacherEventAttendee_eventId_teacherId_key" ON "TeacherEventAttendee"("eventId", "teacherId");
 
 -- AddForeignKey
+ALTER TABLE "User" ADD CONSTRAINT "User_deletedBy_fkey" FOREIGN KEY ("deletedBy") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "UserRole" ADD CONSTRAINT "UserRole_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -1212,10 +1275,19 @@ ALTER TABLE "UserRole" ADD CONSTRAINT "UserRole_roleId_fkey" FOREIGN KEY ("roleI
 ALTER TABLE "TeacherProfile" ADD CONSTRAINT "TeacherProfile_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "TeacherProfile" ADD CONSTRAINT "TeacherProfile_deletedBy_fkey" FOREIGN KEY ("deletedBy") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "ParentProfile" ADD CONSTRAINT "ParentProfile_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "ParentProfile" ADD CONSTRAINT "ParentProfile_deletedBy_fkey" FOREIGN KEY ("deletedBy") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "StaffProfile" ADD CONSTRAINT "StaffProfile_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "StaffProfile" ADD CONSTRAINT "StaffProfile_deletedBy_fkey" FOREIGN KEY ("deletedBy") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "StudentProfile" ADD CONSTRAINT "StudentProfile_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -1230,7 +1302,13 @@ ALTER TABLE "ParentStudentRelation" ADD CONSTRAINT "ParentStudentRelation_parent
 ALTER TABLE "ParentStudentRelation" ADD CONSTRAINT "ParentStudentRelation_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES "Student"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "AcademicCycle" ADD CONSTRAINT "AcademicCycle_deletedBy_fkey" FOREIGN KEY ("deletedBy") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "Course" ADD CONSTRAINT "Course_cycleId_fkey" FOREIGN KEY ("cycleId") REFERENCES "AcademicCycle"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Course" ADD CONSTRAINT "Course_deletedBy_fkey" FOREIGN KEY ("deletedBy") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ClassSection" ADD CONSTRAINT "ClassSection_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -1242,10 +1320,16 @@ ALTER TABLE "ClassSection" ADD CONSTRAINT "ClassSection_teacherId_fkey" FOREIGN 
 ALTER TABLE "ClassSection" ADD CONSTRAINT "ClassSection_cycleId_fkey" FOREIGN KEY ("cycleId") REFERENCES "AcademicCycle"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "ClassSection" ADD CONSTRAINT "ClassSection_deletedBy_fkey" FOREIGN KEY ("deletedBy") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "SectionSchedule" ADD CONSTRAINT "SectionSchedule_sectionId_fkey" FOREIGN KEY ("sectionId") REFERENCES "ClassSection"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ClassSession" ADD CONSTRAINT "ClassSession_sectionId_fkey" FOREIGN KEY ("sectionId") REFERENCES "ClassSection"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Student" ADD CONSTRAINT "Student_deletedBy_fkey" FOREIGN KEY ("deletedBy") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Enrollment" ADD CONSTRAINT "Enrollment_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES "Student"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -1305,6 +1389,9 @@ ALTER TABLE "Receipt" ADD CONSTRAINT "Receipt_paymentId_fkey" FOREIGN KEY ("paym
 ALTER TABLE "Receipt" ADD CONSTRAINT "Receipt_issuedBy_fkey" FOREIGN KEY ("issuedBy") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "LibraryBook" ADD CONSTRAINT "LibraryBook_deletedBy_fkey" FOREIGN KEY ("deletedBy") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "LibraryBorrow" ADD CONSTRAINT "LibraryBorrow_bookId_fkey" FOREIGN KEY ("bookId") REFERENCES "LibraryBook"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -1332,6 +1419,9 @@ ALTER TABLE "CourseMaterial" ADD CONSTRAINT "CourseMaterial_courseId_fkey" FOREI
 ALTER TABLE "CourseMaterial" ADD CONSTRAINT "CourseMaterial_uploadedBy_fkey" FOREIGN KEY ("uploadedBy") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "CourseMaterial" ADD CONSTRAINT "CourseMaterial_deletedBy_fkey" FOREIGN KEY ("deletedBy") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "LoginLog" ADD CONSTRAINT "LoginLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -1342,6 +1432,9 @@ ALTER TABLE "TeacherContract" ADD CONSTRAINT "TeacherContract_teacherId_fkey" FO
 
 -- AddForeignKey
 ALTER TABLE "TeacherContract" ADD CONSTRAINT "TeacherContract_signedById_fkey" FOREIGN KEY ("signedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TeacherContract" ADD CONSTRAINT "TeacherContract_deletedBy_fkey" FOREIGN KEY ("deletedBy") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "TeacherPayroll" ADD CONSTRAINT "TeacherPayroll_contractId_fkey" FOREIGN KEY ("contractId") REFERENCES "TeacherContract"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -1384,6 +1477,9 @@ ALTER TABLE "TeacherAttendanceEvent" ADD CONSTRAINT "TeacherAttendanceEvent_teac
 
 -- AddForeignKey
 ALTER TABLE "TeacherEvent" ADD CONSTRAINT "TeacherEvent_organizerId_fkey" FOREIGN KEY ("organizerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TeacherEvent" ADD CONSTRAINT "TeacherEvent_deletedBy_fkey" FOREIGN KEY ("deletedBy") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "TeacherEventAttendee" ADD CONSTRAINT "TeacherEventAttendee_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "TeacherEvent"("id") ON DELETE CASCADE ON UPDATE CASCADE;

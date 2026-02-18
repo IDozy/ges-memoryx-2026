@@ -1,6 +1,6 @@
 import type { StudentRepository, StudentRecord } from "../domain/student.repository";
-import type { UpdateStudentDTO } from "./dtos/update-student.dto";
 import { normalizeStudentUpdate } from "../domain/student.rules";
+import { UpdateStudentDTO } from "./dtos/student.dto";
 
 export class UpdateStudentUseCase {
   constructor(private readonly repo: StudentRepository) {}

@@ -3,23 +3,45 @@
 import { useEffect, useState } from "react";
 import type { Teacher, TeacherEstado } from "./types";
 
-export type TeacherDraft = Omit<Teacher, "id">;
+export type TeacherDraft = Omit<Teacher, "id" | "userId" | "employeeCode" | "email"> 
+
 
 export const emptyDraft: TeacherDraft = {
-  userId: "",
 
-  email: "",
   nombres: "",
   apellidos: "",
   telefono: "",
-
-  employeeCode: "",
   especialidad: "",
   departamento: "",
   fechaIngreso: "",
-
   estado: "activo",
 };
+
+export const TEACHER_SPECIALTIES = [
+  "Matemática",
+  "Comunicación",
+  "Ciencias Naturales",
+  "Física",
+  "Química",
+  "Biología",
+  "Historia",
+  "Geografía",
+  "Inglés",
+  "Arte",
+  "Educación Física",
+  "Computación",
+  "Robótica",
+  "Programación",
+  "Raz. Matemático",
+  "Raz. Verbal",
+  "Inicial",
+  "Primaria",
+  "Secundaria",
+  "Tutoría",
+  "Otro",
+] as const;
+
+export type TeacherSpecialty = typeof TEACHER_SPECIALTIES[number];
 
 export default function TeachersModal({
   open,
@@ -47,17 +69,12 @@ export default function TeachersModal({
   const saveLabel = mode === "create" ? "Crear" : "Guardar";
 
   function save() {
-    if (!draft.email.trim()) {
-      alert("Completa al menos: Email.");
-      return;
-    }
+    
     if (!draft.nombres.trim() || !draft.apellidos.trim()) {
       alert("Completa al menos: Nombres y Apellidos.");
       return;
     }
 
-    // employeeCode: si lo generas por trigger/backend, puedes no exigirlo.
-    // Aquí lo dejo opcional en CREATE.
     onSubmit(draft);
   }
 
@@ -86,20 +103,11 @@ export default function TeachersModal({
         </div>
 
         <div className="p-4 space-y-6 max-h-[70dvh] overflow-y-auto">
-          {/* ===================== DATOS DEL USUARIO ===================== */}
           <div className="space-y-1">
-            <div className={sectionTitleCls}>Datos del usuario</div>
+            <div className={sectionTitleCls}>Datos del profesor</div>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <Field label="Email">
-              <input
-                className={inputCls}
-                value={draft.email}
-                onChange={(e) => setDraft({ ...draft, email: e.target.value })}
-                type="email"
-              />
-            </Field>
 
             <Field label="Nombres">
               <input
@@ -131,48 +139,23 @@ export default function TeachersModal({
               />
             </Field>
 
-            <Field label="Estado">
-              <select
-                className={inputCls}
-                value={draft.estado}
-                onChange={(e) =>
-                  setDraft({ ...draft, estado: e.target.value as TeacherEstado })
-                }
-              >
-                <option value="activo">Activo</option>
-                <option value="inactivo">Inactivo</option>
-                <option value="suspendido">Suspendido</option>
-                <option value="bloqueado">Bloqueado</option>
-              </select>
-            </Field>
-          </div>
-
-          {/* ===================== PERFIL DOCENTE ===================== */}
-          <div className="border-t border-[var(--color-border)] pt-4 space-y-2">
-            <div className={sectionTitleCls}>Perfil docente</div>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <Field label="Código empleado">
-              <input
-                className={inputCls}
-                value={draft.employeeCode}
-                onChange={(e) =>
-                  setDraft({ ...draft, employeeCode: e.target.value })
-                }
-                placeholder="TEACH-2026-000001"
-              />
-            </Field>
-
             <Field label="Especialidad">
-              <input
-                className={inputCls}
-                value={draft.especialidad}
-                onChange={(e) =>
-                  setDraft({ ...draft, especialidad: e.target.value })
-                }
-              />
-            </Field>
+  <select
+    className={inputCls}
+    value={draft.especialidad}
+    onChange={(e) =>
+      setDraft({ ...draft, especialidad: e.target.value })
+    }
+  >
+    <option value="">Seleccionar...</option>
+    {TEACHER_SPECIALTIES.map((s) => (
+      <option key={s} value={s}>
+        {s}
+      </option>
+    ))}
+  </select>
+</Field>
+
 
             <Field label="Departamento">
               <input
@@ -194,14 +177,25 @@ export default function TeachersModal({
                 }
               />
             </Field>
-          </div>
 
-          {mode === "create" && (
-            <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-muted)]/40 p-3 text-xs opacity-80">
-              Nota: si tu backend genera <b>employeeCode</b> automáticamente (trigger
-              o usecase), puedes dejarlo vacío.
-            </div>
-          )}
+            <Field label="Estado">
+              <select
+                className={inputCls}
+                value={draft.estado}
+                onChange={(e) =>
+                  setDraft({
+                    ...draft,
+                    estado: e.target.value as TeacherEstado,
+                  })
+                }
+              >
+                <option value="activo">Activo</option>
+                <option value="inactivo">Inactivo</option>
+                <option value="suspendido">Suspendido</option>
+                <option value="bloqueado">Bloqueado</option>
+              </select>
+            </Field>
+          </div>
         </div>
 
         <div className="flex justify-end gap-2 border-t border-[var(--color-border)] p-4">

@@ -3,22 +3,22 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-// ⚠️ Ajusta estos imports a tus rutas reales (como hiciste en students)
 import TeachersTable from "@/src/components/teachers/TeachersTable";
 import TeachersModal, {
   emptyDraft,
   type TeacherDraft,
 } from "@/src/components/teachers/TeachersModal";
+
 import type {
   Teacher,
   TeacherEstado,
   CreateTeacherPayload,
+  UpdateTeacherPayload,
 } from "@/src/components/teachers/types";
 
 /**
  * ============================================================
  *  API SHAPES (lo que devuelve tu backend /api/teachers)
- *  ✅ Recomendado: que tu API liste TeacherProfile + User embebido
  * ============================================================
  */
 type ApiTeacher = {
@@ -28,7 +28,7 @@ type ApiTeacher = {
   employeeCode: string;
   specialty: string | null;
   department: string | null;
-  hireDate: string | null; // ISO
+  hireDate: string | null;
 
   user: {
     id: string;
@@ -46,7 +46,6 @@ type ApiList = {
 };
 
 function mapEstadoUserToUi(s: ApiTeacher["user"]["status"]): TeacherEstado {
-  // ajusta según tu UI: "activo" | "inactivo" | etc
   if (s === "INACTIVE") return "inactivo";
   if (s === "SUSPENDED") return "suspendido";
   if (s === "LOCKED") return "bloqueado";
@@ -58,13 +57,11 @@ function apiToUi(t: ApiTeacher): Teacher {
     id: t.id,
     userId: t.userId,
 
-    // datos del User
     email: t.user.email ?? "",
     nombres: t.user.firstName ?? "",
     apellidos: t.user.lastName ?? "",
     telefono: t.user.phone ?? "",
 
-    // datos del TeacherProfile
     employeeCode: t.employeeCode ?? "",
     especialidad: t.specialty ?? "",
     departamento: t.department ?? "",
@@ -74,14 +71,12 @@ function apiToUi(t: ApiTeacher): Teacher {
   };
 }
 
-function uiToApi(d: TeacherDraft, mode: "create" | "edit"): CreateTeacherPayload {
-  // ✅ Lo normal en tu esquema:
-  // - Crear TEACHER implica crear User + asignar Role TEACHER + crear TeacherProfile
-  // - Editar puede tocar User y TeacherProfile
+function uiToApi(
+  d: TeacherDraft,
+  mode: "create" | "edit"
+): CreateTeacherPayload | UpdateTeacherPayload {
+  const base: any = {
 
-  const base = {
-    // user
-    email: (d.email ?? "").trim(),
     firstName: (d.nombres ?? "").trim() || null,
     lastName: (d.apellidos ?? "").trim() || null,
     phone: (d.telefono ?? "").trim() || null,
@@ -94,27 +89,20 @@ function uiToApi(d: TeacherDraft, mode: "create" | "edit"): CreateTeacherPayload
             ? "LOCKED"
             : "ACTIVE",
 
-    // teacherProfile
-    employeeCode: (d.employeeCode ?? "").trim(), // si lo generas por trigger, puedes omitirlo
+
     specialty: (d.especialidad ?? "").trim() || null,
     department: (d.departamento ?? "").trim() || null,
     hireDate: d.fechaIngreso ? new Date(d.fechaIngreso).toISOString() : null,
   };
 
-  if (mode === "edit") {
-    // en edit normalmente no mandas password, ni roles, etc.
-    return base;
-  }
+  // si está vacío y es opcional, lo quitamos
+  if (!base.employeeCode) delete base.employeeCode;
 
-  // create: puedes incluir password temporal o un flag
-  return {
-    ...base,
-    // Si tu API crea password temporal o manda link, define esto en tu backend
-    // tempPassword: "123456",
-  };
+  // en edit normalmente no mandas password ni nada extra (base ya sirve)
+  return base;
 }
 
-// pequeño debounce sin libs
+// debounce simple (sin libs)
 function useDebouncedValue<T>(value: T, delay = 300) {
   const [v, setV] = useState(value);
   useEffect(() => {
@@ -128,9 +116,9 @@ export default function TeachersPage() {
   const [data, setData] = useState<Teacher[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // paginación y búsqueda
-  const [q, setQ] = useState("");
-  const qDebounced = useDebouncedValue(q, 350);
+  // ✅ búsqueda server-side, pero el input estará SOLO en TeachersTable
+
+
   const [page, setPage] = useState(1);
   const pageSize = 200;
 
@@ -141,10 +129,13 @@ export default function TeachersPage() {
     totalPages: 0,
   });
 
+  // modal
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"create" | "edit">("create");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [initialDraft, setInitialDraft] = useState<TeacherDraft>(emptyDraft);
+  const [q, setQ] = useState("");
+  const qDebounced = useDebouncedValue(q, 350);
 
   async function load() {
     setLoading(true);
@@ -154,18 +145,16 @@ export default function TeachersPage() {
       sp.set("page", String(page));
       sp.set("pageSize", String(pageSize));
 
-      const res = await fetch(`/api/teachers?${sp.toString()}`, {
-        cache: "no-store",
-      });
+      console.log("FETCH =>", `/api/teachers?${sp.toString()}`);
+
+      const res = await fetch(`/api/teachers?${sp.toString()}`, { cache: "no-store" });
       if (!res.ok) throw new Error("No se pudo cargar profesores");
 
       const json = (await res.json()) as ApiList;
       setData(json.items.map(apiToUi));
       setMeta(json.meta);
     } catch (e: any) {
-      toast.error("Error cargando profesores", {
-        description: e?.message ?? "Intenta nuevamente",
-      });
+      toast.error("Error cargando profesores", { description: e?.message ?? "Intenta nuevamente" });
     } finally {
       setLoading(false);
     }
@@ -186,22 +175,34 @@ export default function TeachersPage() {
   function onEdit(t: Teacher) {
     setMode("edit");
     setEditingId(t.id);
-    const { id, ...rest } = t;
-    // tu draft puede ser igual al Teacher sin id; ajusta si difiere
-    setInitialDraft(rest as unknown as TeacherDraft);
+    setInitialDraft({
+      nombres: t.nombres,
+      apellidos: t.apellidos,
+      telefono: t.telefono,
+
+      especialidad: t.especialidad,
+      departamento: t.departamento,
+      fechaIngreso: t.fechaIngreso,
+      estado: t.estado,
+    });
     setOpen(true);
   }
 
   async function doDelete(id: string) {
     const res = await fetch(`/api/teachers/${id}`, { method: "DELETE" });
-    if (!res.ok) throw new Error("No se pudo eliminar");
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.message ?? "No se pudo eliminar");
+    }
   }
 
   function onDelete(id: string) {
     const t = data.find((x) => x.id === id);
 
     toast("¿Eliminar profesor?", {
-      description: t ? `${t.nombres} ${t.apellidos}` : "Esta acción no se puede deshacer.",
+      description: t
+        ? `${t.nombres} ${t.apellidos}`
+        : "Esta acción no se puede deshacer.",
       action: {
         label: "Eliminar",
         onClick: async () => {
@@ -218,10 +219,7 @@ export default function TeachersPage() {
           }
         },
       },
-      cancel: {
-        label: "Cancelar",
-        onClick: () => toast.message("Cancelado"),
-      },
+      cancel: { label: "Cancelar", onClick: () => toast.message("Cancelado") },
     });
   }
 
@@ -270,9 +268,11 @@ export default function TeachersPage() {
         const created = await createTeacher(draft);
         toast.dismiss(tId);
         toast.success("Profesor creado", {
-          description: `${draft.nombres ?? ""} ${draft.apellidos ?? ""}`.trim(),
+          description: `${draft.nombres} ${draft.apellidos}`.trim(),
         });
 
+        // OJO: si estás paginado, esto solo actualiza UI local.
+        // Si quieres, puedes hacer load() para refrescar desde server.
         setData((prev) => [apiToUi(created), ...prev]);
         setMeta((m) => ({ ...m, total: m.total + 1 }));
         setOpen(false);
@@ -283,7 +283,7 @@ export default function TeachersPage() {
         const updated = await updateTeacher(editingId, draft);
         toast.dismiss(tId);
         toast.success("Cambios guardados", {
-          description: `${draft.nombres ?? ""} ${draft.apellidos ?? ""}`.trim(),
+          description: `${draft.nombres} ${draft.apellidos}`.trim(),
         });
 
         setData((prev) =>
@@ -302,17 +302,11 @@ export default function TeachersPage() {
       <div className="flex items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Profesores</h1>
-          {/* Si quieres, conecta aquí tu input de búsqueda (q / setQ) */}
         </div>
       </div>
 
       <TeachersTable
         data={data}
-        loading={loading}
-        meta={meta}
-        q={q}
-        onQChange={setQ}
-        onPageChange={setPage}
         onCreate={onCreate}
         onEdit={onEdit}
         onDelete={onDelete}
